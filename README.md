@@ -2,7 +2,7 @@
 	<tr>
 		<td align="left" width="70">
 			<strong>Repeatable Posts</strong><br />
-			Allows you to designate a post as repeatable. It will then be duplicated and re-published on a weekly basis.
+			Designate a post as repeatable and it'll be copied and re-published on a weekly basis.
 		</td>
 		<td align="right" width="20%">
 		</td>
