@@ -1,6 +1,6 @@
 <?php
 
-Class HM_Post_Repeat {
+class HM_Post_Repeat {
 
 	/**
 	 * Setup the actions and filters required by this class.
