@@ -34,3 +34,22 @@ Created by Human Made.
 Written and maintained by [Tom Willmot](https://github.com/willmot).
 
 Interested in joining in on the fun? [Join us, and become human!](https://hmn.md/is/hiring/)
+
+## UI
+
+<img src="https://hmn.imgix.net/humanmade-production/uploads/2015/10/Screen-Shot-2015-10-01-at-16.15.37.png" />
+
+_Repeating and repeat posts are highlighted as such on the edit posts page._
+
+-------
+
+<img src="https://hmn.imgix.net/humanmade-production/uploads/2015/10/Screen-Shot-2015-10-01-at-16.13.50.png" />
+<img src="https://hmn.imgix.net/humanmade-production/uploads/2015/10/Screen-Shot-2015-10-01-at-16.13.46.png" />
+
+_When editing a post you can easily set whether it should repeat._
+
+-------
+
+<img src="https://hmn.imgix.net/humanmade-production/uploads/2015/10/Screen-Shot-2015-10-01-at-16.13.28.png" />
+
+_Repeat posts show a convenient link back to the original._
