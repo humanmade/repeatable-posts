@@ -5,7 +5,7 @@ Plugin Name: Repeatable Posts
 Description: Designate a post as repeatable and it'll be copied and re-published on a weekly basis.
 Author: Human Made Limited
 Author URI: http://hmn.md/
-Version: 1.0
+Version: 0.2
 License: GPL-2.0+
 License URI: http://www.gnu.org/licenses/gpl-2.0.txt
 Text Domain: hm-post-repeat
