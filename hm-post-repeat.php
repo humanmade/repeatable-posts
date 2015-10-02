@@ -144,7 +144,7 @@ function save_post_repeating_status() {
 	}
 
 	else {
-		update_post_meta( get_the_id(), 'hm-post-repeat', true );
+		update_post_meta( get_the_id(), 'hm-post-repeat', $_POST['hm-post-repeat'] );
 	}
 
 }
