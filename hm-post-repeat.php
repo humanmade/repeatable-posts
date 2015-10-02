@@ -35,11 +35,11 @@ namespace HM\Post_Repeat;
 /**
  * Setup the actions and filters required by this class.
  */
-add_action( 'post_submitbox_misc_actions', 'HM\Post_Repeat\publish_box_ui' );
-add_action( 'save_post', 'HM\Post_Repeat\save_post_repeating_status' );
-add_action( 'publish_post', 'HM\Post_Repeat\create_next_post' );
-add_action( 'admin_enqueue_scripts', 'HM\Post_Repeat\enqueue_scripts' );
-add_filter( 'display_post_states', 'HM\Post_Repeat\post_states' );
+add_action( 'post_submitbox_misc_actions', __NAMESPACE__ . '\publish_box_ui' );
+add_action( 'save_post', __NAMESPACE__ . '\save_post_repeating_status' );
+add_action( 'publish_post', __NAMESPACE__ . '\create_next_post' );
+add_action( 'admin_enqueue_scripts', __NAMESPACE__ . '\enqueue_scripts' );
+add_filter( 'display_post_states', __NAMESPACE__ . '\post_states' );
 
 /**
  * Enqueue the scripts and styles that are needed by this plugin
