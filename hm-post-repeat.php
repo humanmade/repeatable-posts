@@ -120,7 +120,12 @@ function publish_box_ui() {
 function post_states( $post_states ) {
 
 	if ( is_repeating_post( get_the_id() ) ) {
-		$post_states['hm-post-repeat'] = __( 'Repeating', 'hm-post-repeat' );
+		// If the schedule has been removed since publishing, let the user know.
+		if ( get_repeating_schedule( get_the_id() ) ) {
+			$post_states['hm-post-repeat'] = __( 'Repeating', 'hm-post-repeat' );
+		} else {
+			$post_states['hm-post-repeat'] = __( 'Invalid Repeating Schedule', 'hm-post-repeat' );
+		}
 	}
 
 	if ( is_repeat_post( get_the_id() ) ) {
