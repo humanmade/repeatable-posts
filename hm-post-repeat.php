@@ -248,6 +248,55 @@ function repeating_post_types() {
 }
 
 /**
+ * All available repeat schedules.
+ *
+ * @return array An array of all available repeat schedules
+ */
+function repeating_schedules() {
+
+	/**
+	 * Enable support for additional schedules.
+	 *
+	 * @param array[] $schedules Schedule array items.
+	 */
+	$schedules = apply_filters( 'hm_post_repeat_schedules', array(
+		'daily'   => array( 'interval' => '1 day',   'display' => __( 'Daily',   'hm-post-repeat' ) ),
+		'weekly'  => array( 'interval' => '1 week',  'display' => __( 'Weekly',  'hm-post-repeat' ) ),
+		'monthly' => array( 'interval' => '1 month', 'display' => __( 'Monthly', 'hm-post-repeat' ) ),
+	) );
+
+	foreach ( $schedules as $slug => &$schedule ) {
+		$schedule['slug'] = $slug;
+	}
+
+	return $schedules;
+
+}
+
+/**
+ * Get the repeating schedule of the given post_id.
+ *
+ * @param int $post_id The id of the post you want to check.
+ * @return array|null The schedule to repeat by, or null if invalid.
+ */
+function get_repeating_schedule( $post_id ) {
+
+	if ( ! is_repeating_post( $post_id ) ) {
+		return null;
+	}
+
+	if ( $repeating_schedule = get_post_meta( $post_id, 'hm-post-repeat', true ) ) {
+		$schedules = repeating_schedules();
+		if ( array_key_exists( $repeating_schedule, $schedules ) ) {
+			return $schedules[ $repeating_schedule ];
+		}
+	}
+
+	return null;
+
+}
+
+/**
  * Check whether a given post_id is a repeating post.
  *
  * A repeating post is defined as the original post that was set to repeat.
