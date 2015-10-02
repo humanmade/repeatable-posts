@@ -79,13 +79,13 @@ function publish_box_ui() {
 
 		<?php if ( is_repeat_post( get_the_id() ) ) : ?>
 
-			<strong><?php printf( esc_html( __( 'Repeat of %s', 'hm-post-repeat' ) ), '<a href="' . esc_url( get_edit_post_link( get_post()->post_parent ) ) . '">' . esc_html( get_the_title( get_post_field( 'post_parent', get_the_id() ) ) ) . '</a>' ); ?></strong>
+			<strong><?php printf( esc_html__( 'Repeat of %s', 'hm-post-repeat' ), '<a href="' . esc_url( get_edit_post_link( get_post()->post_parent ) ) . '">' . esc_html( get_the_title( get_post_field( 'post_parent', get_the_id() ) ) ) . '</a>' ); ?></strong>
 
 		<?php else : ?>
 
 			<?php $is_repeating_post = is_repeating_post( get_the_id() ); ?>
 
-			<strong><?php echo ! $is_repeating_post ? esc_html( __( 'No', 'hm-post-repeat' ) ) : esc_html( __( 'Weekly', 'hm-post-repeat' ) ); ?></strong>
+			<strong><?php echo ! $is_repeating_post ? esc_html__( 'No', 'hm-post-repeat' ) : esc_html__( 'Weekly', 'hm-post-repeat' ); ?></strong>
 
 			<a href="#hm-post-repeat" class="edit-hm-post-repeat hide-if-no-js"><span aria-hidden="true"><?php esc_html_e( 'Edit', 'hm-post-repeat' ); ?></span> <span class="screen-reader-text"><?php esc_html_e( 'Edit Repeat Settings', 'hm-post-repeat' ); ?></span></a>
 
@@ -111,7 +111,7 @@ function publish_box_ui() {
  *
  * By default post states are displayed on the Edit Post screen in bold after the post title
  *
- * @param array The original array of post states.
+ * @param array $post_states The original array of post states.
  * @return array The array of post states with ours added.
  */
 function post_states( $post_states ) {
@@ -139,7 +139,7 @@ function save_post_repeating_status() {
 		return;
 	}
 
-	if ( $_POST['hm-post-repeat'] === 'no' ) {
+	if ( 'no' === $_POST['hm-post-repeat'] ) {
 		delete_post_meta( get_the_id(), 'hm-post-repeat' );
 	}
 
@@ -207,7 +207,7 @@ function create_next_post() {
 	// Mirror any post_meta
 	$post_meta = get_post_meta( get_the_id() );
 
-	// Ingore some internal meta fields
+	// Ignore some internal meta fields
 	unset( $post_meta['_edit_lock'] );
 	unset( $post_meta['_edit_last'] );
 
@@ -223,7 +223,7 @@ function create_next_post() {
 	// Mirror any term relationships
 	$taxonomies = get_object_taxonomies( get_post_type() );
 
-	foreach( $taxonomies as $taxonomy ) {
+	foreach ( $taxonomies as $taxonomy ) {
 		wp_set_object_terms( $next_post, wp_list_pluck( wp_get_object_terms( get_the_id(), $taxonomy ), 'slug' ), $taxonomy );
 	}
 
@@ -252,7 +252,7 @@ function repeating_post_types() {
  *
  * A repeating post is defined as the original post that was set to repeat.
  *
- * @param int  $post_id The id of the post you want to check
+ * @param int $post_id The id of the post you want to check.
  * @return bool Whether the past post_id is a repeating post or not.
  */
 function is_repeating_post( $post_id ) {
