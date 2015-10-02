@@ -83,9 +83,10 @@ function publish_box_ui() {
 
 		<?php else : ?>
 
-			<?php $is_repeating_post = is_repeating_post( get_the_id() ); ?>
+			<?php $repeating_schedule = get_repeating_schedule( get_the_id() ); ?>
+			<?php $is_repeating_post = is_repeating_post( get_the_id() ) && isset( $repeating_schedule ); ?>
 
-			<strong><?php echo ! $is_repeating_post ? esc_html__( 'No', 'hm-post-repeat' ) : esc_html__( 'Weekly', 'hm-post-repeat' ); ?></strong>
+			<strong><?php echo ! $is_repeating_post ? esc_html__( 'No', 'hm-post-repeat' ) : esc_html( $repeating_schedule['display'] ); ?></strong>
 
 			<a href="#hm-post-repeat" class="edit-hm-post-repeat hide-if-no-js"><span aria-hidden="true"><?php esc_html_e( 'Edit', 'hm-post-repeat' ); ?></span> <span class="screen-reader-text"><?php esc_html_e( 'Edit Repeat Settings', 'hm-post-repeat' ); ?></span></a>
 
@@ -93,7 +94,9 @@ function publish_box_ui() {
 
 				<select name="hm-post-repeat">
 					<option<?php selected( ! $is_repeating_post ); ?> value="no"><?php esc_html_e( 'No', 'hm-post-repeat' ); ?></option>
-					<option<?php selected( $is_repeating_post ); ?> value="weekly"><?php esc_html_e( 'Weekly', 'hm-post-repeat' ); ?></option>
+				<?php foreach ( repeating_schedules() as $schedule_slug => $schedule ) : ?>
+					<option<?php selected( $is_repeating_post && $schedule_slug === $repeating_schedule['slug'] ); ?> value="<?php echo esc_attr( $schedule_slug ); ?>"><?php echo esc_html( $schedule['display'] ); ?></option>
+				<?php endforeach; ?>
 				</select>
 
 				<a href="#hm-post-repeat" class="save-post-hm-post-repeat hide-if-no-js button"><?php esc_html_e( 'OK', 'hm-post-repeat' ); ?></a>
@@ -182,6 +185,12 @@ function create_next_post() {
 		return;
 	}
 
+	// Bail if the saved schedule doesn't exist
+	$repeating_schedule = get_repeating_schedule( get_the_id() );
+	if ( ! $repeating_schedule ) {
+		return;
+	}
+
 	$next_post = $original_post;
 
 	// Create the repeat post as a copy of the original, but ignore some fields
@@ -194,9 +203,9 @@ function create_next_post() {
 	// We set the post_parent to the original post_id, so they're related
 	$next_post['post_parent'] = $original_post['ID'];
 
-	// Set the next post to publish one week in the future
+	// Set the next post to publish in the future
 	$next_post['post_status'] = 'future';
-	$next_post['post_date'] = date( 'Y-m-d H:i:s', strtotime( $original_post['post_date'] . ' + 1 week' ) );
+	$next_post['post_date'] = date( 'Y-m-d H:i:s', strtotime( $original_post['post_date'] . ' + ' . $repeating_schedule['interval'] ) );
 
 	$next_post = wp_insert_post( wp_slash( $next_post ) );
 
