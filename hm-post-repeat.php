@@ -275,7 +275,7 @@ function is_repeating_post( $post_id ) {
  *
  * A repeat post is defined as any post which is a repeat of the original repeating post
  *
- * @param int  $post_id The id of the post you want to check
+ * @param int $post_id The id of the post you want to check.
  * @return bool Whether the past post_id is a repeat post or not.
  */
 function is_repeat_post( $post_id ) {

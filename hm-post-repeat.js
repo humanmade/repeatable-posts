@@ -11,7 +11,9 @@
 
 	} );
 
-	$( document ).on( 'click', '#hm-post-repeat a', function() {
+	$( document ).on( 'click', '#hm-post-repeat a', function( e ) {
+
+		e.preventDefault();
 
 		$( '.misc-pub-hm-post-repeat strong' ).text( $( '#hm-post-repeat' ).find( 'option:selected' ).text() ).show();
 		$( '.edit-hm-post-repeat' ).show();
