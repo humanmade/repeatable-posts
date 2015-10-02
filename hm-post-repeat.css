@@ -1,6 +1,6 @@
 .misc-pub-hm-post-repeat {
 	line-height: 25px;
-	height: 25px;
+	min-height: 25px;
 }
 
 .misc-pub-hm-post-repeat span.dashicons.dashicons-controls-repeat {
