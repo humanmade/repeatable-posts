@@ -79,7 +79,7 @@ function publish_box_ui() {
 
 		<?php if ( is_repeat_post( get_the_id() ) ) : ?>
 
-			<strong><?php printf( esc_html( __( 'Repeat of %s', 'hm-post-repeat' ) ), '<a href="' . esc_url( get_edit_post_link( get_post()->post_parent ) ) . '">' . esc_html( get_the_title( get_post_field( 'post_parent', get_the_id() ) ) ) . '</a>' ) ); ?></strong>
+			<strong><?php printf( esc_html( __( 'Repeat of %s', 'hm-post-repeat' ) ), '<a href="' . esc_url( get_edit_post_link( get_post()->post_parent ) ) . '">' . esc_html( get_the_title( get_post_field( 'post_parent', get_the_id() ) ) ) . '</a>' ); ?></strong>
 
 		<?php else : ?>
 
