@@ -5,7 +5,7 @@ class HM_Post_Repeat {
 	/**
 	 * Setup the actions and filters required by this class.
 	 */
-	function __construct() {
+	public function __construct() {
 
 		add_action( 'post_submitbox_misc_actions', array( $this, 'publish_box_ui') );
 		add_action( 'save_post', array( $this, 'save_post_repeating_status' ) );
@@ -19,7 +19,7 @@ class HM_Post_Repeat {
 	/**
 	 * Enqueue the scripts and styles that are needed by this plugin
 	 */
-	function enqueue_scripts( $hook ) {
+	public function enqueue_scripts( $hook ) {
 
 		// Ensure we only load them on the edit post and add new post admin screens
 		if ( ! in_array( $hook, array( 'post.php', 'post-new.php' ) ) ) {
@@ -39,7 +39,7 @@ class HM_Post_Repeat {
 	 * The UI varies depending on whether the post is the original repeating post
 	 * or itself a repeat.
 	 */
-	function publish_box_ui() {
+	public function publish_box_ui() {
 
 		if ( ! in_array( get_post_type(), self::repeating_post_types() ) ) {
 			return;
@@ -49,30 +49,32 @@ class HM_Post_Repeat {
 
 			<span class="dashicons dashicons-controls-repeat"></span>
 
-			<?php _e( 'Repeat:', 'hm-post-repeat' ); ?>
+			<?php esc_html_e( 'Repeat:', 'hm-post-repeat' ); ?>
 
-			<?php if ( self::is_repeat_post( get_the_id() ) ) { ?>
+			<?php if ( self::is_repeat_post( get_the_id() ) ) : ?>
 
-				<strong><?php printf( __( 'Repeat of %s', 'hm-post-repeat' ), '<a href="' . esc_url( get_edit_post_link( get_post()->post_parent ) ) . '">' . get_the_title( get_post()->post_parent ) . '</a>' ); ?></strong>
+				<strong><?php printf( esc_html( __( 'Repeat of %s', 'hm-post-repeat' ) ), '<a href="' . esc_url( get_edit_post_link( get_post()->post_parent ) ) . '">' . get_the_title( get_post()->post_parent ) . '</a>' ); ?></strong>
 
-			<?php } else { ?>
+			<?php else : ?>
 
-				<strong><?php echo ! self::is_repeating_post( get_the_id() ) ? __( 'No' ) : __( 'Weekly' ); ?></strong>
+				<?php $is_repeating_post = self::is_repeating_post( get_the_id() ); ?>
 
-				<a href="#hm-post-repeat" class="edit-hm-post-repeat hide-if-no-js"><span aria-hidden="true"><?php _e( 'Edit' ); ?></span> <span class="screen-reader-text"><?php _( 'Edit Repeat Settings', 'hm-post-repeat' ); ?></span></a>
+				<strong><?php echo ! $is_repeating_post ? esc_html( __( 'No' ) ) : esc_html( __( 'Weekly' ) ); ?></strong>
+
+				<a href="#hm-post-repeat" class="edit-hm-post-repeat hide-if-no-js"><span aria-hidden="true"><?php esc_html_e( 'Edit' ); ?></span> <span class="screen-reader-text"><?php esc_html_e( 'Edit Repeat Settings', 'hm-post-repeat' ); ?></span></a>
 
 				<span class="hide-if-js" id="hm-post-repeat">
 
 					<select name="hm-post-repeat">
-						<option<?php selected( ! self::is_repeating_post( get_the_id() ) ); ?> value="no"><?php _e( 'No', 'hm-post-repeat' ); ?></option>
-						<option<?php selected( self::is_repeating_post( get_the_id() ) ); ?> value="weekly"><?php _e( 'Weekly' ); ?></option>
+						<option<?php selected( ! $is_repeating_post ); ?> value="no"><?php esc_html_e( 'No' ); ?></option>
+						<option<?php selected( $is_repeating_post ); ?> value="weekly"><?php esc_html_e( 'Weekly' ); ?></option>
 					</select>
 
-					<a href="#hm-post-repeat" class="save-post-hm-post-repeat hide-if-no-js button">OK</a>
+					<a href="#hm-post-repeat" class="save-post-hm-post-repeat hide-if-no-js button"><?php esc_html_e( 'OK' ); ?></a>
 
 				</span>
 
-			<?php }	?>
+			<?php endif; ?>
 
 		</div>
 
@@ -86,7 +88,7 @@ class HM_Post_Repeat {
 	 * @param array The original array of post states.
 	 * @return array The array of post states with ours added.
 	 */
-	function post_states( $post_states ) {
+	public function post_states( $post_states ) {
 
 		if ( self::is_repeating_post( get_the_id() ) ) {
 			$post_states['hm-post-repeat'] = __( 'Repeating', 'hm-post-repeat' );
@@ -105,7 +107,7 @@ class HM_Post_Repeat {
 	 *
 	 * Hooked into `save_post`. When saving a post that has been set to repeat we save a post meta entry.
 	 */
-	function save_post_repeating_status() {
+	public function save_post_repeating_status() {
 
 		if ( ! in_array( get_post_type(), self::repeating_post_types() ) || ! isset( $_POST['hm-post-repeat'] ) ) {
 			return;
@@ -131,7 +133,7 @@ class HM_Post_Repeat {
 	 *
 	 * @todo Support additional intervals
 	 */
-	function create_next_post() {
+	public function create_next_post() {
 
 		if ( ! in_array( get_post_type(), self::repeating_post_types() ) ) {
 			return;
@@ -170,7 +172,7 @@ class HM_Post_Repeat {
 		$next_post['post_status'] = 'future';
 		$next_post['post_date'] = date( 'Y-m-d H:i:s', strtotime( $original_post['post_date'] . ' + 1 week' ) );
 
-		$next_post = wp_insert_post( $next_post );
+		$next_post = wp_insert_post( wp_slash( $next_post ) );
 
 		if ( is_wp_error( $next_post ) ) {
 			return;
@@ -188,7 +190,7 @@ class HM_Post_Repeat {
 
 		if ( $post_meta ) {
 			foreach ( $post_meta as $key => $value ) {
-				add_post_meta( $next_post, $key, $value );
+				add_post_meta( $next_post, $key, wp_slash( $value ) );
 			}
 		}
 
@@ -208,16 +210,12 @@ class HM_Post_Repeat {
 	 *
 	 * @return array An array of post types
 	 */
-	static function repeating_post_types() {
+	public static function repeating_post_types() {
 
 		/**
 		 * Enable support for additional post types.
 		 *
-		 * @param array $post_types {
-		 *     An array of post types
-		 *
-		 *     @type string $var Post type slug.
-		 * }
+		 * @param string[] $post_types Post type slugs.
 		 */
 		return apply_filters( 'hm_post_repeat_post_types', array( 'post' ) );
 
@@ -231,14 +229,14 @@ class HM_Post_Repeat {
 	 * @param int  $post_id The id of the post you want to check
 	 * @return bool Whether the past post_id is a repeating post or not.
 	 */
-	static function is_repeating_post( $post_id ) {
+	public static function is_repeating_post( $post_id ) {
 
 		// We check $_POST data so that this function works inside a `save_post` hook when the post_meta hasn't yet been saved
-		if ( isset( $_POST['hm-post-repeat'] ) && $_POST['ID'] === $post_id ) {
+		if ( isset( $_POST['hm-post-repeat'] ) && isset( $_POST['ID'] ) && $_POST['ID'] === $post_id ) {
 			return true;
 		}
 
-		if ( get_post_meta( get_the_id(), 'hm-post-repeat', true ) ) {
+		if ( get_post_meta( $post_id, 'hm-post-repeat', true ) ) {
 			return true;
 		}
 
@@ -254,9 +252,11 @@ class HM_Post_Repeat {
 	 * @param int  $post_id The id of the post you want to check
 	 * @return bool Whether the past post_id is a repeat post or not.
 	 */
-	static function is_repeat_post( $post_id ) {
+	public static function is_repeat_post( $post_id ) {
 
-		if ( get_post( get_the_id() )->post_parent && get_post_meta( get_post( get_the_id() )->post_parent, 'hm-post-repeat', true ) ) {
+		$post_parent = get_post_field( 'post_parent', $post_id );
+
+		if ( $post_parent && get_post_meta( $post_parent, 'hm-post-repeat', true ) ) {
 			return true;
 		}
 
