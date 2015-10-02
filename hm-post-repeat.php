@@ -79,24 +79,24 @@ function publish_box_ui() {
 
 		<?php if ( is_repeat_post( get_the_id() ) ) : ?>
 
-			<strong><?php printf( esc_html( __( 'Repeat of %s', 'hm-post-repeat' ) ), '<a href="' . esc_url( get_edit_post_link( get_post()->post_parent ) ) . '">' . get_the_title( get_post()->post_parent ) . '</a>' ); ?></strong>
+			<strong><?php printf( esc_html( __( 'Repeat of %s', 'hm-post-repeat' ) ), '<a href="' . esc_url( get_edit_post_link( get_post()->post_parent ) ) . '">' . esc_html( get_the_title( get_post_field( 'post_parent', get_the_id() ) ) ) . '</a>' ) ); ?></strong>
 
 		<?php else : ?>
 
 			<?php $is_repeating_post = is_repeating_post( get_the_id() ); ?>
 
-			<strong><?php echo ! $is_repeating_post ? esc_html( __( 'No' ) ) : esc_html( __( 'Weekly' ) ); ?></strong>
+			<strong><?php echo ! $is_repeating_post ? esc_html( __( 'No', 'hm-post-repeat' ) ) : esc_html( __( 'Weekly', 'hm-post-repeat' ) ); ?></strong>
 
-			<a href="#hm-post-repeat" class="edit-hm-post-repeat hide-if-no-js"><span aria-hidden="true"><?php esc_html_e( 'Edit' ); ?></span> <span class="screen-reader-text"><?php esc_html_e( 'Edit Repeat Settings', 'hm-post-repeat' ); ?></span></a>
+			<a href="#hm-post-repeat" class="edit-hm-post-repeat hide-if-no-js"><span aria-hidden="true"><?php esc_html_e( 'Edit', 'hm-post-repeat' ); ?></span> <span class="screen-reader-text"><?php esc_html_e( 'Edit Repeat Settings', 'hm-post-repeat' ); ?></span></a>
 
 			<span class="hide-if-js" id="hm-post-repeat">
 
 				<select name="hm-post-repeat">
-					<option<?php selected( ! $is_repeating_post ); ?> value="no"><?php esc_html_e( 'No' ); ?></option>
-					<option<?php selected( $is_repeating_post ); ?> value="weekly"><?php esc_html_e( 'Weekly' ); ?></option>
+					<option<?php selected( ! $is_repeating_post ); ?> value="no"><?php esc_html_e( 'No', 'hm-post-repeat' ); ?></option>
+					<option<?php selected( $is_repeating_post ); ?> value="weekly"><?php esc_html_e( 'Weekly', 'hm-post-repeat' ); ?></option>
 				</select>
 
-				<a href="#hm-post-repeat" class="save-post-hm-post-repeat hide-if-no-js button"><?php esc_html_e( 'OK' ); ?></a>
+				<a href="#hm-post-repeat" class="save-post-hm-post-repeat hide-if-no-js button"><?php esc_html_e( 'OK', 'hm-post-repeat' ); ?></a>
 
 			</span>
 
