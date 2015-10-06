@@ -167,10 +167,13 @@ function create_next_post( $post_id, $post ) {
 	elseif ( is_repeating_post( $post_id ) ) {
 
 		if ( isset( $_POST['hm-post-repeat'] ) ) {
-			if ( 'no' === $_POST['hm-post-repeat'] ) {
+			$post_repeat = sanitize_text_field( $_POST['hm-post-repeat'] );
+
+			// This is where we make sure that only available schedules can be selected
+			if ( ! in_array( $post_repeat, array_keys( repeating_schedules() ) ) ) {
 				delete_post_meta( $post_id, 'hm-post-repeat' );
 			} else {
-				update_post_meta( $post_id, 'hm-post-repeat', $_POST['hm-post-repeat'] );
+				update_post_meta( $post_id, 'hm-post-repeat', $post_repeat );
 			}
 		}
 	}
