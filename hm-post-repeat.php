@@ -119,6 +119,10 @@ function publish_box_ui() {
 function post_states( $post_states ) {
 
 	if ( is_repeating_post( get_the_id() ) ) {
+
+		// Fix the saved schedule post meta when viewing the posts list
+		fix_repeating_schedule( get_the_id() );
+
 		// If the schedule has been removed since publishing, let the user know.
 		if ( get_repeating_schedule( get_the_id() ) ) {
 			$post_states['hm-post-repeat'] = __( 'Repeating', 'hm-post-repeat' );
@@ -161,6 +165,9 @@ function create_next_post( $post_id, $post ) {
 
 		// From here on we need the original post_id
 		$post_id = $post->post_parent;
+
+		// Fix the saved schedule post meta when publishing the next repeat post
+		fix_repeating_schedule( $post_id );
 	}
 
 	// Or the original
@@ -314,6 +321,22 @@ function get_repeating_schedule( $post_id ) {
 		if ( array_key_exists( $repeating_schedule, $schedules ) ) {
 			return $schedules[ $repeating_schedule ];
 		}
+	}
+
+}
+
+/**
+ * Fix the repeating schedule of the given post_id.
+ *
+ * This is to check existing repeating posts and correctly set the repeatable post meta.
+ * If the default "1" value is found, update it to the standard "weekly".
+ *
+ * @param int $post_id The id of the post you want to check.
+ */
+function fix_repeating_schedule( $post_id ) {
+
+	if ( $post_id && '1' === get_post_meta( $post_id, 'hm-post-repeat', true ) ) {
+		update_post_meta( $post_id, 'hm-post-repeat', 'weekly' );
 	}
 
 }
