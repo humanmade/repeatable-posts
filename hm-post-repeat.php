@@ -303,7 +303,7 @@ function repeating_schedules() {
 function get_repeating_schedule( $post_id ) {
 
 	if ( ! is_repeating_post( $post_id ) ) {
-		return null;
+		return;
 	}
 
 	if ( $repeating_schedule = get_post_meta( $post_id, 'hm-post-repeat', true ) ) {
@@ -312,8 +312,6 @@ function get_repeating_schedule( $post_id ) {
 			return $schedules[ $repeating_schedule ];
 		}
 	}
-
-	return null;
 
 }
 
