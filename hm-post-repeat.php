@@ -36,8 +36,7 @@ namespace HM\Post_Repeat;
  * Setup the actions and filters required by this class.
  */
 add_action( 'post_submitbox_misc_actions', __NAMESPACE__ . '\publish_box_ui' );
-add_action( 'save_post', __NAMESPACE__ . '\save_post_repeating_status' );
-add_action( 'publish_post', __NAMESPACE__ . '\create_next_post' );
+add_action( 'save_post', __NAMESPACE__ . '\create_next_post', 999, 2 );
 add_action( 'admin_enqueue_scripts', __NAMESPACE__ . '\enqueue_scripts' );
 add_filter( 'display_post_states', __NAMESPACE__ . '\post_states' );
 
@@ -137,62 +136,65 @@ function post_states( $post_states ) {
 }
 
 /**
- * Save the repeating status to post meta.
- *
- * Hooked into `save_post`. When saving a post that has been set to repeat we save a post meta entry.
- */
-function save_post_repeating_status() {
-
-	if ( ! in_array( get_post_type(), repeating_post_types() ) || ! isset( $_POST['hm-post-repeat'] ) ) {
-		return;
-	}
-
-	if ( 'no' === $_POST['hm-post-repeat'] ) {
-		delete_post_meta( get_the_id(), 'hm-post-repeat' );
-	}
-
-	else {
-		update_post_meta( get_the_id(), 'hm-post-repeat', $_POST['hm-post-repeat'] );
-	}
-
-}
-
-/**
- * Create the next repeat post when the last one is published.
+ * Save repeating status and possibly create the next repeat post.
  *
  * When a repeat post (or the original) is published we copy and schedule a new post
- * to publish in a weeks time. That way the next repeat post is always ready to go.
- * This is hooked into publish_post so that the repeat post is only created when the original
- * is published.
+ * to publish in the chosen interval. That way the next repeat post is always ready to go.
+ * This is hooked into save_post to make sure that all post fields and meta are up to date.
  *
- * @todo Support additional intervals
+ * @param integer $post_id The ID of the post.
+ * @param WP_Post $post    The WP_Post object of the post.
  */
-function create_next_post() {
+function create_next_post( $post_id, $post ) {
 
-	if ( ! in_array( get_post_type(), repeating_post_types() ) ) {
+	if ( ! in_array( $post->post_type, repeating_post_types() ) ) {
 		return;
 	}
 
-	$original_post = false;
-
 	// Are we publishing a repeat post
-	if ( is_repeat_post( get_the_id() ) ) {
-		$original_post = get_post( get_post()->post_parent, ARRAY_A );
+	if ( is_repeat_post( $post_id ) ) {
+
+		// Only allow if it is actually being published
+		if ( 'publish' !== $post->post_status ) {
+			return;
+		}
+
+		// From here on we need the original post_id
+		$post_id = $post->post_parent;
 	}
 
 	// Or the original
-	elseif ( is_repeating_post( get_the_id() ) ) {
-		$original_post = get_post( null, ARRAY_A );
+	elseif ( is_repeating_post( $post_id ) ) {
+
+		if ( isset( $_POST['hm-post-repeat'] ) ) {
+			if ( 'no' === $_POST['hm-post-repeat'] ) {
+				delete_post_meta( $post_id, 'hm-post-repeat' );
+			} else {
+				update_post_meta( $post_id, 'hm-post-repeat', $_POST['hm-post-repeat'] );
+			}
+		}
 	}
 
-	// Bail if we're not publishing a repeating post
+	// Or else we shouldn't even be here!
+	else {
+		return;
+	}
+
+	$original_post = get_post( $post_id, ARRAY_A );
+
+	// Bail if we're not publishing a repeat(ing) post
 	if ( ! $original_post ) {
 		return;
 	}
 
 	// Bail if the saved schedule doesn't exist
-	$repeating_schedule = get_repeating_schedule( get_the_id() );
+	$repeating_schedule = get_repeating_schedule( $post_id );
 	if ( ! $repeating_schedule ) {
+		return;
+	}
+
+	// Bail if the original post isn't already published
+	if ( 'publish' !== $original_post['post_status'] ) {
 		return;
 	}
 
@@ -210,35 +212,40 @@ function create_next_post() {
 
 	// Set the next post to publish in the future
 	$next_post['post_status'] = 'future';
-	$next_post['post_date'] = date( 'Y-m-d H:i:s', strtotime( $original_post['post_date'] . ' + ' . $repeating_schedule['interval'] ) );
 
-	$next_post = wp_insert_post( wp_slash( $next_post ) );
+	// Use the date of the current post being saved as the base
+	$next_post['post_date'] = date( 'Y-m-d H:i:s', strtotime( $post->post_date . ' + ' . $repeating_schedule['interval'] ) );
 
-	if ( is_wp_error( $next_post ) ) {
+	// Make sure the next post will be in the future
+	if ( strtotime( $next_post['post_date'] ) <= time() ) {
+		return;
+	}
+
+	// All checks done, get that post scheduled!
+	$next_post_id = wp_insert_post( wp_slash( $next_post ), true );
+	if ( is_wp_error( $next_post_id ) ) {
 		return;
 	}
 
 	// Mirror any post_meta
-	$post_meta = get_post_meta( get_the_id() );
+	if ( $post_meta = get_post_meta( $post_id ) ) {
+		// Ignore some internal meta fields
+		unset( $post_meta['_edit_lock'] );
+		unset( $post_meta['_edit_last'] );
 
-	// Ignore some internal meta fields
-	unset( $post_meta['_edit_lock'] );
-	unset( $post_meta['_edit_last'] );
+		// Don't copy the post repeat meta as only the original post should have that
+		unset( $post_meta['hm-post-repeat'] );
 
-	// Don't copy the post repeat meta as only the original post should have that
-	unset( $post_meta['hm-post-repeat'] );
-
-	if ( $post_meta ) {
 		foreach ( $post_meta as $key => $value ) {
-			add_post_meta( $next_post, $key, wp_slash( $value ) );
+			add_post_meta( $next_post_id, $key, wp_slash( $value ) );
 		}
 	}
 
 	// Mirror any term relationships
-	$taxonomies = get_object_taxonomies( get_post_type() );
+	$taxonomies = get_object_taxonomies( $original_post['post_type'] );
 
 	foreach ( $taxonomies as $taxonomy ) {
-		wp_set_object_terms( $next_post, wp_list_pluck( wp_get_object_terms( get_the_id(), $taxonomy ), 'slug' ), $taxonomy );
+		wp_set_object_terms( $next_post_id, wp_list_pluck( wp_get_object_terms( $post_id, $taxonomy ), 'slug' ), $taxonomy );
 	}
 
 }
@@ -338,7 +345,7 @@ function is_repeating_post( $post_id ) {
  *
  * A repeat post is defined as any post which is a repeat of the original repeating post
  *
- * @param int  $post_id The id of the post you want to check
+ * @param int $post_id The id of the post you want to check.
  * @return bool Whether the past post_id is a repeat post or not.
  */
 function is_repeat_post( $post_id ) {
