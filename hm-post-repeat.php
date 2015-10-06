@@ -41,7 +41,7 @@ add_action( 'admin_enqueue_scripts', __NAMESPACE__ . '\enqueue_scripts' );
 add_filter( 'display_post_states', __NAMESPACE__ . '\post_states' );
 
 /**
- * Enqueue the scripts and styles that are needed by this plugin
+ * Enqueue the scripts and styles that are needed by this plugin.
  */
 function enqueue_scripts( $hook ) {
 
@@ -111,7 +111,7 @@ function publish_box_ui() {
 /**
  * Add some custom post states to cover repeat and repeating posts.
  *
- * By default post states are displayed on the Edit Post screen in bold after the post title
+ * By default post states are displayed on the Edit Post screen in bold after the post title.
  *
  * @param array $post_states The original array of post states.
  * @return array The array of post states with ours added.
@@ -146,7 +146,7 @@ function post_states( $post_states ) {
  * to publish in the chosen interval. That way the next repeat post is always ready to go.
  * This is hooked into save_post to make sure that all post fields and meta are up to date.
  *
- * @param integer $post_id The ID of the post.
+ * @param int     $post_id The ID of the post.
  * @param WP_Post $post    The WP_Post object of the post.
  */
 function create_next_post( $post_id, $post ) {
@@ -328,7 +328,7 @@ function get_repeating_schedule( $post_id ) {
 /**
  * Fix the repeating schedule of the given post_id.
  *
- * This is to check existing repeating posts and correctly set the repeatable post meta.
+ * This is to check existing repeating posts and correctly set the repeatable post meta field.
  * If the default "1" value is found, update it to the standard "weekly".
  *
  * @param int $post_id The id of the post you want to check.
@@ -347,7 +347,7 @@ function fix_repeating_schedule( $post_id ) {
  * A repeating post is defined as the original post that was set to repeat.
  *
  * @param int $post_id The id of the post you want to check.
- * @return bool Whether the past post_id is a repeating post or not.
+ * @return bool Whether the passed post_id is a repeating post or not.
  */
 function is_repeating_post( $post_id ) {
 
@@ -367,10 +367,10 @@ function is_repeating_post( $post_id ) {
 /**
  * Check whether a given post_id is a repeat post.
  *
- * A repeat post is defined as any post which is a repeat of the original repeating post
+ * A repeat post is defined as any post which is a repeat of the original repeating post.
  *
  * @param int $post_id The id of the post you want to check.
- * @return bool Whether the past post_id is a repeat post or not.
+ * @return bool Whether the passed post_id is a repeat post or not.
  */
 function is_repeat_post( $post_id ) {
 
