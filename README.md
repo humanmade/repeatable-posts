@@ -23,7 +23,7 @@ Once you set a post as repeating and publish it an exact copy of that post is ma
 
 ## Why does it exist?
 
-We use this on our internal blogs to schuedule recurring reminders and announcements. For example every week a "weekly updates" post is published, prompting everyone to comment with what they've been working on that week.
+We use this on our internal blogs to schedule recurring reminders and announcements. For example every week a "weekly updates" post is published, prompting everyone to comment with what they've been working on that week.
 
 ## Want to contribute?
 
