@@ -1,10 +1,10 @@
 <table width="100%">
 	<tr>
-		<td align="left" width="70">
+		<td align="left" width="70%">
 			<strong>Repeatable Posts</strong><br />
 			Designate a post as repeatable and it'll be copied and re-published on a weekly basis.
 		</td>
-		<td align="right" width="20%">
+		<td align="right" width="30%">
 		</td>
 	</tr>
 	<tr>
