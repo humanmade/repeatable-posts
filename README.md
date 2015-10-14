@@ -17,11 +17,15 @@
 	</tr>
 </table>
 
-## How Does It Work
+## How does it work?
 
 Once you set a post as repeating and publish it an exact copy of that post is made and scheduled for publishing a week after the publish date of the original post. Once that repeat post is published it is again copied and set to publish the week after that. This continues until the heat death of the universe, or until you remove the plugin, whichever comes first.
 
-## Want to contribute
+## Why does it exist?
+
+We use this on our internal blogs to schuedule recurring reminders and announcements. For example every week a "weekly updates" post is published, prompting everyone to comment with what they've been working on that week.
+
+## Want to contribute?
 
 There's likely some issues already, if not create some! Any code changes should be submitted as Pull Requests. Thanks!
 
