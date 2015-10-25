@@ -36,13 +36,12 @@ namespace HM\Post_Repeat;
  * Setup the actions and filters required by this class.
  */
 add_action( 'post_submitbox_misc_actions', __NAMESPACE__ . '\publish_box_ui' );
-add_action( 'save_post', __NAMESPACE__ . '\save_post_repeating_status' );
-add_action( 'publish_post', __NAMESPACE__ . '\create_next_post' );
+add_action( 'save_post', __NAMESPACE__ . '\create_next_post', 999, 2 );
 add_action( 'admin_enqueue_scripts', __NAMESPACE__ . '\enqueue_scripts' );
 add_filter( 'display_post_states', __NAMESPACE__ . '\post_states' );
 
 /**
- * Enqueue the scripts and styles that are needed by this plugin
+ * Enqueue the scripts and styles that are needed by this plugin.
  */
 function enqueue_scripts( $hook ) {
 
@@ -83,9 +82,10 @@ function publish_box_ui() {
 
 		<?php else : ?>
 
-			<?php $is_repeating_post = is_repeating_post( get_the_id() ); ?>
+			<?php $repeating_schedule = get_repeating_schedule( get_the_id() ); ?>
+			<?php $is_repeating_post = is_repeating_post( get_the_id() ) && isset( $repeating_schedule ); ?>
 
-			<strong><?php echo ! $is_repeating_post ? esc_html__( 'No', 'hm-post-repeat' ) : esc_html__( 'Weekly', 'hm-post-repeat' ); ?></strong>
+			<strong><?php echo ! $is_repeating_post ? esc_html__( 'No', 'hm-post-repeat' ) : esc_html( $repeating_schedule['display'] ); ?></strong>
 
 			<a href="#hm-post-repeat" class="edit-hm-post-repeat hide-if-no-js"><span aria-hidden="true"><?php esc_html_e( 'Edit', 'hm-post-repeat' ); ?></span> <span class="screen-reader-text"><?php esc_html_e( 'Edit Repeat Settings', 'hm-post-repeat' ); ?></span></a>
 
@@ -93,7 +93,9 @@ function publish_box_ui() {
 
 				<select name="hm-post-repeat">
 					<option<?php selected( ! $is_repeating_post ); ?> value="no"><?php esc_html_e( 'No', 'hm-post-repeat' ); ?></option>
-					<option<?php selected( $is_repeating_post ); ?> value="weekly"><?php esc_html_e( 'Weekly', 'hm-post-repeat' ); ?></option>
+				<?php foreach ( repeating_schedules() as $schedule_slug => $schedule ) : ?>
+					<option<?php selected( $is_repeating_post && $schedule_slug === $repeating_schedule['slug'] ); ?> value="<?php echo esc_attr( $schedule_slug ); ?>"><?php echo esc_html( $schedule['display'] ); ?></option>
+				<?php endforeach; ?>
 				</select>
 
 				<a href="#hm-post-repeat" class="save-post-hm-post-repeat hide-if-no-js button"><?php esc_html_e( 'OK', 'hm-post-repeat' ); ?></a>
@@ -109,7 +111,7 @@ function publish_box_ui() {
 /**
  * Add some custom post states to cover repeat and repeating posts.
  *
- * By default post states are displayed on the Edit Post screen in bold after the post title
+ * By default post states are displayed on the Edit Post screen in bold after the post title.
  *
  * @param array $post_states The original array of post states.
  * @return array The array of post states with ours added.
@@ -117,7 +119,16 @@ function publish_box_ui() {
 function post_states( $post_states ) {
 
 	if ( is_repeating_post( get_the_id() ) ) {
-		$post_states['hm-post-repeat'] = __( 'Repeating', 'hm-post-repeat' );
+
+		// Fix the saved schedule post meta when viewing the posts list
+		fix_repeating_schedule( get_the_id() );
+
+		// If the schedule has been removed since publishing, let the user know.
+		if ( get_repeating_schedule( get_the_id() ) ) {
+			$post_states['hm-post-repeat'] = __( 'Repeating', 'hm-post-repeat' );
+		} else {
+			$post_states['hm-post-repeat'] = __( 'Invalid Repeating Schedule', 'hm-post-repeat' );
+		}
 	}
 
 	if ( is_repeat_post( get_the_id() ) ) {
@@ -129,56 +140,71 @@ function post_states( $post_states ) {
 }
 
 /**
- * Save the repeating status to post meta.
- *
- * Hooked into `save_post`. When saving a post that has been set to repeat we save a post meta entry.
- */
-function save_post_repeating_status() {
-
-	if ( ! in_array( get_post_type(), repeating_post_types() ) || ! isset( $_POST['hm-post-repeat'] ) ) {
-		return;
-	}
-
-	if ( 'no' === $_POST['hm-post-repeat'] ) {
-		delete_post_meta( get_the_id(), 'hm-post-repeat' );
-	}
-
-	else {
-		update_post_meta( get_the_id(), 'hm-post-repeat', true );
-	}
-
-}
-
-/**
- * Create the next repeat post when the last one is published.
+ * Save repeating status and possibly create the next repeat post.
  *
  * When a repeat post (or the original) is published we copy and schedule a new post
- * to publish in a weeks time. That way the next repeat post is always ready to go.
- * This is hooked into publish_post so that the repeat post is only created when the original
- * is published.
+ * to publish in the chosen interval. That way the next repeat post is always ready to go.
+ * This is hooked into save_post to make sure that all post fields and meta are up to date.
  *
- * @todo Support additional intervals
+ * @param int     $post_id The ID of the post.
+ * @param WP_Post $post    The WP_Post object of the post.
  */
-function create_next_post() {
+function create_next_post( $post_id, $post ) {
 
-	if ( ! in_array( get_post_type(), repeating_post_types() ) ) {
+	if ( ! in_array( $post->post_type, repeating_post_types() ) ) {
 		return;
 	}
 
-	$original_post = false;
-
 	// Are we publishing a repeat post
-	if ( is_repeat_post( get_the_id() ) ) {
-		$original_post = get_post( get_post()->post_parent, ARRAY_A );
+	if ( is_repeat_post( $post_id ) ) {
+
+		// Only allow if it is actually being published
+		if ( 'publish' !== $post->post_status ) {
+			return;
+		}
+
+		// From here on we need the original post_id
+		$post_id = $post->post_parent;
+
+		// Fix the saved schedule post meta when publishing the next repeat post
+		fix_repeating_schedule( $post_id );
 	}
 
 	// Or the original
-	elseif ( is_repeating_post( get_the_id() ) ) {
-		$original_post = get_post( null, ARRAY_A );
+	elseif ( is_repeating_post( $post_id ) ) {
+
+		if ( isset( $_POST['hm-post-repeat'] ) ) {
+			$post_repeat = sanitize_text_field( $_POST['hm-post-repeat'] );
+
+			// This is where we make sure that only available schedules can be selected
+			if ( ! in_array( $post_repeat, array_keys( repeating_schedules() ) ) ) {
+				delete_post_meta( $post_id, 'hm-post-repeat' );
+			} else {
+				update_post_meta( $post_id, 'hm-post-repeat', $post_repeat );
+			}
+		}
 	}
 
-	// Bail if we're not publishing a repeating post
+	// Or else we shouldn't even be here!
+	else {
+		return;
+	}
+
+	$original_post = get_post( $post_id, ARRAY_A );
+
+	// Bail if we're not publishing a repeat(ing) post
 	if ( ! $original_post ) {
+		return;
+	}
+
+	// Bail if the saved schedule doesn't exist
+	$repeating_schedule = get_repeating_schedule( $post_id );
+	if ( ! $repeating_schedule ) {
+		return;
+	}
+
+	// Bail if the original post isn't already published
+	if ( 'publish' !== $original_post['post_status'] ) {
 		return;
 	}
 
@@ -194,37 +220,42 @@ function create_next_post() {
 	// We set the post_parent to the original post_id, so they're related
 	$next_post['post_parent'] = $original_post['ID'];
 
-	// Set the next post to publish one week in the future
+	// Set the next post to publish in the future
 	$next_post['post_status'] = 'future';
-	$next_post['post_date'] = date( 'Y-m-d H:i:s', strtotime( $original_post['post_date'] . ' + 1 week' ) );
 
-	$next_post = wp_insert_post( wp_slash( $next_post ) );
+	// Use the date of the current post being saved as the base
+	$next_post['post_date'] = date( 'Y-m-d H:i:s', strtotime( $post->post_date . ' + ' . $repeating_schedule['interval'] ) );
 
-	if ( is_wp_error( $next_post ) ) {
+	// Make sure the next post will be in the future
+	if ( strtotime( $next_post['post_date'] ) <= time() ) {
+		return;
+	}
+
+	// All checks done, get that post scheduled!
+	$next_post_id = wp_insert_post( wp_slash( $next_post ), true );
+	if ( is_wp_error( $next_post_id ) ) {
 		return;
 	}
 
 	// Mirror any post_meta
-	$post_meta = get_post_meta( get_the_id() );
+	if ( $post_meta = get_post_meta( $post_id ) ) {
+		// Ignore some internal meta fields
+		unset( $post_meta['_edit_lock'] );
+		unset( $post_meta['_edit_last'] );
 
-	// Ignore some internal meta fields
-	unset( $post_meta['_edit_lock'] );
-	unset( $post_meta['_edit_last'] );
+		// Don't copy the post repeat meta as only the original post should have that
+		unset( $post_meta['hm-post-repeat'] );
 
-	// Don't copy the post repeat meta as only the original post should have that
-	unset( $post_meta['hm-post-repeat'] );
-
-	if ( $post_meta ) {
 		foreach ( $post_meta as $key => $value ) {
-			add_post_meta( $next_post, $key, wp_slash( $value ) );
+			add_post_meta( $next_post_id, $key, wp_slash( $value ) );
 		}
 	}
 
 	// Mirror any term relationships
-	$taxonomies = get_object_taxonomies( get_post_type() );
+	$taxonomies = get_object_taxonomies( $original_post['post_type'] );
 
 	foreach ( $taxonomies as $taxonomy ) {
-		wp_set_object_terms( $next_post, wp_list_pluck( wp_get_object_terms( get_the_id(), $taxonomy ), 'slug' ), $taxonomy );
+		wp_set_object_terms( $next_post_id, wp_list_pluck( wp_get_object_terms( $post_id, $taxonomy ), 'slug' ), $taxonomy );
 	}
 
 }
@@ -248,12 +279,75 @@ function repeating_post_types() {
 }
 
 /**
+ * All available repeat schedules.
+ *
+ * @return array An array of all available repeat schedules
+ */
+function repeating_schedules() {
+
+	/**
+	 * Enable support for additional schedules.
+	 *
+	 * @param array[] $schedules Schedule array items.
+	 */
+	$schedules = apply_filters( 'hm_post_repeat_schedules', array(
+		'daily'   => array( 'interval' => '1 day',   'display' => __( 'Daily',   'hm-post-repeat' ) ),
+		'weekly'  => array( 'interval' => '1 week',  'display' => __( 'Weekly',  'hm-post-repeat' ) ),
+		'monthly' => array( 'interval' => '1 month', 'display' => __( 'Monthly', 'hm-post-repeat' ) ),
+	) );
+
+	foreach ( $schedules as $slug => &$schedule ) {
+		$schedule['slug'] = $slug;
+	}
+
+	return $schedules;
+
+}
+
+/**
+ * Get the repeating schedule of the given post_id.
+ *
+ * @param int $post_id The id of the post you want to check.
+ * @return array|null The schedule to repeat by, or null if invalid.
+ */
+function get_repeating_schedule( $post_id ) {
+
+	if ( ! is_repeating_post( $post_id ) ) {
+		return;
+	}
+
+	if ( $repeating_schedule = get_post_meta( $post_id, 'hm-post-repeat', true ) ) {
+		$schedules = repeating_schedules();
+		if ( array_key_exists( $repeating_schedule, $schedules ) ) {
+			return $schedules[ $repeating_schedule ];
+		}
+	}
+
+}
+
+/**
+ * Fix the repeating schedule of the given post_id.
+ *
+ * This is to check existing repeating posts and correctly set the repeatable post meta field.
+ * If the default "1" value is found, update it to the standard "weekly".
+ *
+ * @param int $post_id The id of the post you want to check.
+ */
+function fix_repeating_schedule( $post_id ) {
+
+	if ( $post_id && '1' === get_post_meta( $post_id, 'hm-post-repeat', true ) ) {
+		update_post_meta( $post_id, 'hm-post-repeat', 'weekly' );
+	}
+
+}
+
+/**
  * Check whether a given post_id is a repeating post.
  *
  * A repeating post is defined as the original post that was set to repeat.
  *
  * @param int $post_id The id of the post you want to check.
- * @return bool Whether the past post_id is a repeating post or not.
+ * @return bool Whether the passed post_id is a repeating post or not.
  */
 function is_repeating_post( $post_id ) {
 
@@ -273,10 +367,10 @@ function is_repeating_post( $post_id ) {
 /**
  * Check whether a given post_id is a repeat post.
  *
- * A repeat post is defined as any post which is a repeat of the original repeating post
+ * A repeat post is defined as any post which is a repeat of the original repeating post.
  *
  * @param int $post_id The id of the post you want to check.
- * @return bool Whether the past post_id is a repeat post or not.
+ * @return bool Whether the passed post_id is a repeat post or not.
  */
 function is_repeat_post( $post_id ) {
 
