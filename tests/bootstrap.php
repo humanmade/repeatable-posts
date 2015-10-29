@@ -33,7 +33,7 @@ if ( false !== getenv( 'WP_DEVELOP_DIR' ) ) {
 require $test_root . '/includes/functions.php';
 
 function _manually_load_plugin() {
-	require_once( dirname( __DIR__ ) . '/backupwordpress.php' );
+	require dirname( dirname( __FILE__ ) ) . '/hm-post-repeat.php';
 }
 tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
 
