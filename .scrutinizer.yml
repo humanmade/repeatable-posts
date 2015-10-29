@@ -1,3 +1,8 @@
+checks:
+    php:
+        code_rating: true
+        duplication: true
+
 filter:
     excluded_paths: [ 'tests/*' ]
 
@@ -26,12 +31,6 @@ tools:
     sensiolabs_security_checker: true
 
     php_loc: true
-
-    php_hhvm:
-        enabled: true
-        command: hhvm
-        extensions:
-            - php
 
     php_analyzer:
         enabled: true
@@ -74,10 +73,5 @@ tools:
     php_pdepend: true
 
     php_sim:
-            enabled: true
-            min_mass: 50
-
-checks:
-    php:
-        code_rating: true
-        duplication: true
+        enabled: true
+        min_mass: 50
