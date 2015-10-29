@@ -37,9 +37,9 @@ namespace HM\Post_Repeat;
  */
 add_action( 'post_submitbox_misc_actions', __NAMESPACE__ . '\publish_box_ui' );
 add_action( 'save_post', __NAMESPACE__ . '\save_post_repeating_status' );
-add_action( 'publish_post', __NAMESPACE__ . '\create_next_post' );
+add_action( 'publish_post', __NAMESPACE__ . '\create_next_repeat_post' );
 add_action( 'admin_enqueue_scripts', __NAMESPACE__ . '\enqueue_scripts' );
-add_filter( 'display_post_states', __NAMESPACE__ . '\post_states' );
+add_filter( 'display_post_states', __NAMESPACE__ . '\post_states', 10, 2 );
 
 /**
  * Enqueue the scripts and styles that are needed by this plugin
@@ -114,13 +114,13 @@ function publish_box_ui() {
  * @param array $post_states The original array of post states.
  * @return array The array of post states with ours added.
  */
-function post_states( $post_states ) {
+function post_states( $post_states, $post ) {
 
-	if ( is_repeating_post( get_the_id() ) ) {
+	if ( is_repeating_post( $post->ID ) ) {
 		$post_states['hm-post-repeat'] = __( 'Repeating', 'hm-post-repeat' );
 	}
 
-	if ( is_repeat_post( get_the_id() ) ) {
+	if ( is_repeat_post( $post->ID ) ) {
 		$post_states['hm-post-repeat'] = __( 'Repeat', 'hm-post-repeat' );
 	}
 
@@ -133,18 +133,22 @@ function post_states( $post_states ) {
  *
  * Hooked into `save_post`. When saving a post that has been set to repeat we save a post meta entry.
  */
-function save_post_repeating_status() {
+function save_post_repeating_status( $post_id = null, $post_repeat_setting = null ) {
 
-	if ( ! in_array( get_post_type(), repeating_post_types() ) || ! isset( $_POST['hm-post-repeat'] ) ) {
+	if ( is_null( $post_repeat_setting ) ) {
+		$post_repeat_setting = isset( $_POST['hm-post-repeat'] ) ? $_POST['hm-post-repeat'] : '';
+	}
+
+	if ( ! in_array( get_post_type( $post_id ), repeating_post_types() ) || empty( $post_repeat_setting ) ) {
 		return;
 	}
 
-	if ( 'no' === $_POST['hm-post-repeat'] ) {
-		delete_post_meta( get_the_id(), 'hm-post-repeat' );
+	if ( 'no' === $post_repeat_setting ) {
+		delete_post_meta( $post_id, 'hm-post-repeat' );
 	}
 
 	else {
-		update_post_meta( get_the_id(), 'hm-post-repeat', true );
+		update_post_meta( $post_id, 'hm-post-repeat', true );
 	}
 
 }
@@ -159,27 +163,28 @@ function save_post_repeating_status() {
  *
  * @todo Support additional intervals
  */
-function create_next_post() {
+function create_next_repeat_post( $post_id ) {
 
-	if ( ! in_array( get_post_type(), repeating_post_types() ) ) {
-		return;
+	if ( ! in_array( get_post_type( $post_id ), repeating_post_types() ) ) {
+		return false;
 	}
 
-	$original_post = false;
-
-	// Are we publishing a repeat post
-	if ( is_repeat_post( get_the_id() ) ) {
-		$original_post = get_post( get_post()->post_parent, ARRAY_A );
+	if ( 'publish' !== get_post_status( $post_id ) ) {
+		return false;
 	}
 
-	// Or the original
-	elseif ( is_repeating_post( get_the_id() ) ) {
-		$original_post = get_post( null, ARRAY_A );
+	$original_post_id = get_repeating_post( $post_id );
+
+	// Bail if we're not publishing a repeating or repeat post
+	if ( ! $original_post_id ) {
+		return false;
 	}
 
-	// Bail if we're not publishing a repeating post
-	if ( ! $original_post ) {
-		return;
+	$original_post = get_post( $original_post_id, ARRAY_A );
+
+	// If there is already a repeat post scheduled don't create another one
+	if ( get_next_scheduled_repeat_post( $original_post['ID'] ) ) {
+		return false;
 	}
 
 	$next_post = $original_post;
@@ -198,14 +203,14 @@ function create_next_post() {
 	$next_post['post_status'] = 'future';
 	$next_post['post_date'] = date( 'Y-m-d H:i:s', strtotime( $original_post['post_date'] . ' + 1 week' ) );
 
-	$next_post = wp_insert_post( wp_slash( $next_post ) );
+	$next_post_id = wp_insert_post( wp_slash( $next_post ) );
 
-	if ( is_wp_error( $next_post ) ) {
-		return;
+	if ( is_wp_error( $next_post_id ) ) {
+		return false;
 	}
 
 	// Mirror any post_meta
-	$post_meta = get_post_meta( get_the_id() );
+	$post_meta = get_post_meta( $original_post['ID'] );
 
 	// Ignore some internal meta fields
 	unset( $post_meta['_edit_lock'] );
@@ -215,17 +220,21 @@ function create_next_post() {
 	unset( $post_meta['hm-post-repeat'] );
 
 	if ( $post_meta ) {
-		foreach ( $post_meta as $key => $value ) {
-			add_post_meta( $next_post, $key, wp_slash( $value ) );
+		foreach ( $post_meta as $key => $values ) {
+			foreach ( $values as $value ) {
+				add_post_meta( $next_post_id, $key, maybe_unserialize( $value ) );
+			}
 		}
 	}
 
 	// Mirror any term relationships
-	$taxonomies = get_object_taxonomies( get_post_type() );
+	$taxonomies = get_object_taxonomies( get_post_type( $original_post['ID'] ) );
 
 	foreach ( $taxonomies as $taxonomy ) {
-		wp_set_object_terms( $next_post, wp_list_pluck( wp_get_object_terms( get_the_id(), $taxonomy ), 'slug' ), $taxonomy );
+		wp_set_object_terms( $next_post_id, wp_list_pluck( wp_get_object_terms( $original_post['ID'], $taxonomy ), 'slug' ), $taxonomy );
 	}
+
+	return $next_post_id;
 
 }
 
@@ -287,5 +296,49 @@ function is_repeat_post( $post_id ) {
 	}
 
 	return false;
+
+}
+
+/**
+ * Get the next scheduled repeat post
+ *
+ * @param int $post_id The id of a repeat or repeating post
+ * @return Int|Bool Return the ID of the next repeat post_id or false if it can't find one
+ */
+function get_next_scheduled_repeat_post( $post_id ) {
+
+	$post = get_post( get_repeating_post( $post_id ) );
+
+	$repeat_posts = get_posts( array( 'post_status' => 'future', 'post_parent' => $post->ID ) );
+
+	if ( isset( $repeat_posts[0] ) ) {
+	 	return $repeat_posts[0];
+	}
+
+	return false;
+
+}
+
+/**
+ * Get the next scheduled repeat post
+ *
+ * @param int $post_id The id of a repeat or repeating post
+ * @return Int|Bool Return the original repeating post_id or false if it can't find it
+ */
+function get_repeating_post( $post_id ) {
+
+	$original_post_id = false;
+
+	// Are we publishing a repeat post
+	if ( is_repeat_post( $post_id ) ) {
+		$original_post_id = get_post( $post_id )->post_parent;
+	}
+
+	// Or the original
+	elseif ( is_repeating_post( $post_id ) ) {
+		$original_post_id = $post_id;
+	}
+
+	return $original_post_id;
 
 }
