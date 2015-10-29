@@ -299,9 +299,15 @@ function is_repeat_post( $post_id ) {
 
 }
 
+/**
+ * Get the next scheduled repeat post
+ *
+ * @param int $post_id The id of a repeat or repeating post
+ * @return Int|Bool Return the ID of the next repeat post_id or false if it can't find one
+ */
 function get_next_scheduled_repeat_post( $post_id ) {
 
-	$post = get_post( $post_id );
+	$post = get_post( get_repeating_post( $post_id ) );
 
 	$repeat_posts = get_posts( array( 'post_status' => 'future', 'post_parent' => $post->ID ) );
 
@@ -313,6 +319,12 @@ function get_next_scheduled_repeat_post( $post_id ) {
 
 }
 
+/**
+ * Get the next scheduled repeat post
+ *
+ * @param int $post_id The id of a repeat or repeating post
+ * @return Int|Bool Return the original repeating post_id or false if it can't find it
+ */
 function get_repeating_post( $post_id ) {
 
 	$original_post_id = false;
