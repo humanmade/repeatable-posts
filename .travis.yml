@@ -2,63 +2,13 @@ language: php
 sudo: false
 php:
   - 5.3
-  - 5.4
-  - 5.5
-  - 5.6
-  - hhvm
-  - 7.0
 
 env:
   # trunk:
   - WP_VERSION=master WP_MULTISITE=0
-  - WP_VERSION=master WP_MULTISITE=1
-  # latest stable:
-  - WP_VERSION=4.3.2 WP_MULTISITE=0
-  # previous stable:
-  - WP_VERSION=4.2.5 WP_MULTISITE=0
-  # earliest supported:
-  - WP_VERSION=3.9.9 WP_MULTISITE=0
 
 matrix:
-  allow_failures:
-    - php: hhvm
-    - php: 7.0
   fast_finish: true
-
-  exclude:
-  # Only test latest version of WP with HHVM and PHP 7
-    - php: hhvm
-      env: WP_VERSION=3.9.9 WP_MULTISITE=0
-    - php: hhvm
-      env: WP_VERSION=3.9.9 WP_MULTISITE=1
-    - php: hhvm
-      env: WP_VERSION=4.1.8 WP_MULTISITE=0
-    - php: hhvm
-      env: WP_VERSION=4.1.8 WP_MULTISITE=1
-    - php: hhvm
-      env: WP_VERSION=4.2.5 WP_MULTISITE=0
-    - php: hhvm
-      env: WP_VERSION=4.2.5 WP_MULTISITE=1
-    - php: hhvm
-      env: WP_VERSION=4.3.1 WP_MULTISITE=0
-    - php: hhvm
-      env: WP_VERSION=4.3.1 WP_MULTISITE=1
-    - php: 7.0
-      env: WP_VERSION=3.9.9 WP_MULTISITE=0
-    - php: 7.0
-      env: WP_VERSION=3.9.9 WP_MULTISITE=1
-    - php: 7.0
-      env: WP_VERSION=4.1.8 WP_MULTISITE=0
-    - php: 7.0
-      env: WP_VERSION=4.1.8 WP_MULTISITE=1
-    - php: 7.0
-      env: WP_VERSION=4.2.5 WP_MULTISITE=0
-    - php: 7.0
-      env: WP_VERSION=4.2.5 WP_MULTISITE=1
-    - php: 7.0
-      env: WP_VERSION=4.3.1 WP_MULTISITE=0
-    - php: 7.0
-      env: WP_VERSION=4.3.1 WP_MULTISITE=1
 
 before_install:
   # set up WP install
@@ -78,26 +28,21 @@ before_install:
   - cd $TRAVIS_BUILD_DIR
 
 install:
-  - git config --global user.email "paul@hmn.md"
-  - git config --global user.name "Paul de Wouters"
+  - git config --global user.email "tom@hmn.md"
+  - git config --global user.name "Tom Willmot"
+
 notifications:
   email: false
 
 script:
   - cd $TRAVIS_BUILD_DIR
   - |
-    if [[ "$TRAVIS_PHP_VERSION" == "5.6" && "$WP_VERSION" == "master" ]] ; then
-        phpunit --coverage-clover=coverage.clover
-    else
-        phpunit
-    fi
+    phpunit --coverage-clover=coverage.clover
 
 after_script:
   - |
-    if [[ "$TRAVIS_PHP_VERSION" == "5.6" && "$WP_VERSION" == "master" ]] ; then
-        wget https://scrutinizer-ci.com/ocular.phar
-        php ocular.phar code-coverage:upload --format=php-clover coverage.clover
-    fi
+      wget https://scrutinizer-ci.com/ocular.phar
+      php ocular.phar code-coverage:upload --format=php-clover coverage.clover
 
 git:
   depth: 1
