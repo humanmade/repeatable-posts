@@ -1,15 +1,40 @@
 <?php
 
-$_tests_dir = getenv( 'WP_TESTS_DIR' );
-if ( ! $_tests_dir ) {
-	$_tests_dir = '/tmp/wordpress-tests-lib';
+/**
+ * Bootstrap the plugin unit testing environment.
+ *
+ * @package BackUpWordPress
+ * @subpackage tests
+ */
+
+/**
+ * Determine where the WP test suite lives.
+ *
+ * Support for:
+ * 1. `WP_DEVELOP_DIR` environment variable, which points to a checkout
+ *   of the develop.svn.wordpress.org repository (this is recommended)
+ * 2. `WP_TESTS_DIR` environment variable, which points to a checkout
+ * 3. `WP_ROOT_DIR` environment variable, which points to a checkout
+ * 4. Plugin installed inside of WordPress.org developer checkout
+ * 5. Tests checked out to /tmp
+ */
+if ( false !== getenv( 'WP_DEVELOP_DIR' ) ) {
+	$test_root = getenv( 'WP_DEVELOP_DIR' ) . '/tests/phpunit';
+} elseif ( false !== getenv( 'WP_TESTS_DIR' ) ) {
+	$test_root = getenv( 'WP_TESTS_DIR' );
+} elseif ( false !== getenv( 'WP_ROOT_DIR' ) ) {
+	$test_root = getenv( 'WP_ROOT_DIR' ) . '/tests/phpunit';
+} elseif ( file_exists( '../../../../tests/phpunit/includes/bootstrap.php' ) ) {
+	$test_root = '../../../../tests/phpunit';
+} elseif ( file_exists( '/tmp/wordpress-tests-lib/includes/bootstrap.php' ) ) {
+	$test_root = '/tmp/wordpress-tests-lib';
 }
 
-require_once $_tests_dir . '/includes/functions.php';
+require $test_root . '/includes/functions.php';
 
 function _manually_load_plugin() {
-	require dirname( dirname( __FILE__ ) ) . '/hm-post-repeat.php';
+	require_once( dirname( __DIR__ ) . '/backupwordpress.php' );
 }
 tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
 
-require $_tests_dir . '/includes/bootstrap.php';
+require $test_root . '/includes/bootstrap.php';
