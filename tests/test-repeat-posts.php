@@ -222,4 +222,32 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 	}
 
+	function test_create_repeat_post_copies_terms() {
+
+		$post_id = self::factory()->post->create();
+		self::factory()->term->add_post_terms( $post_id, array( 'Tag 1', 'Tag 2' ), 'post_tag' );
+
+		$cat1 = self::factory()->term->create_object( array( 'taxonomy' => 'category', 'name' => 'Cat 1' ) );
+		$cat2 = self::factory()->term->create_object( array( 'taxonomy' => 'category', 'name' => 'Cat 2' ) );
+
+		self::factory()->term->add_post_terms( $post_id, array( $cat1, $cat2 ), 'category' );
+
+		$this->assertTrue( has_tag( 'Tag 1', $post_id ) );
+		$this->assertTrue( has_tag( 'Tag 2', $post_id ) );
+
+		$this->assertTrue( has_category( $cat1, $post_id ) );
+		$this->assertTrue( has_category( $cat2, $post_id ) );
+
+		save_post_repeating_status( $post_id, 'yes' );
+
+		$repeat_post_id = create_next_repeat_post( $post_id );
+
+		$this->assertTrue( has_tag( 'Tag 1', $repeat_post_id ) );
+		$this->assertTrue( has_tag( 'Tag 2', $repeat_post_id ) );
+
+		$this->assertTrue( has_category( $cat1, $repeat_post_id ) );
+		$this->assertTrue( has_category( $cat2, $repeat_post_id ) );
+
+	}
+
 }
