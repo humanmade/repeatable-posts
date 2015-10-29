@@ -83,10 +83,6 @@ install:
 notifications:
   email: false
 
-before_script:
-  - cd $TRAVIS_BUILD_DIR
-  - composer self-update
-  - composer install --no-interaction
 script:
   - cd $TRAVIS_BUILD_DIR
   - |
