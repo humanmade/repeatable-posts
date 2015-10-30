@@ -33,7 +33,7 @@ notifications:
 
 script:
   - cd $TRAVIS_BUILD_DIR
-  - phpunit
+  - phpunit --coverage-clover=coverage.xml
 
 after_success:
   - codecov
