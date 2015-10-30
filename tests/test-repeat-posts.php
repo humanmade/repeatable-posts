@@ -23,7 +23,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 		$post_id = self::factory()->post->create();
 		$this->assertFalse( is_repeating_post( $post_id ) );
 
-		save_post_repeating_status( $post_id, 'yes' );
+		save_post_repeating_status( $post_id, '1' );
 		$this->assertTrue( is_repeating_post( $post_id ) );
 
 	}
@@ -33,7 +33,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 		$post_id = self::factory()->post->create();
 		$this->assertFalse( is_repeating_post( $post_id ) );
 
-		save_post_repeating_status( $post_id, 'yes' );
+		save_post_repeating_status( $post_id, '1' );
 		$this->assertTrue( is_repeating_post( $post_id ) );
 
 		save_post_repeating_status( $post_id );
@@ -60,7 +60,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 		$this->assertFalse( is_repeating_post( $post_id ) );
 
 		$_POST['ID'] = $post_id;
-		$_POST['hm-post-repeat'] = 'yes';
+		$_POST['hm-post-repeat'] = '1';
 		$this->assertTrue( is_repeating_post( $post_id ) );
 
 	}
@@ -80,7 +80,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 		$this->assertFalse( is_repeat_post( $post_id ) );
 		$this->assertEquals( $parent_post_id, get_post( $post_id )->post_parent );
 
-		save_post_repeating_status( $parent_post_id, 'yes' );
+		save_post_repeating_status( $parent_post_id, '1' );
 
 		$this->assertTrue( is_repeat_post( $post_id ) );
 
@@ -92,7 +92,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 		$parent_post_id = self::factory()->post->create();
 		$post_id = self::factory()->post->create( array( 'post_parent' => $parent_post_id ) );
-		save_post_repeating_status( $parent_post_id, 'yes' );
+		save_post_repeating_status( $parent_post_id, '1' );
 
 		// Hack to allow us access to $post_states so we can test it
 		add_filter( 'display_post_states', function( $states, $post ) {
@@ -123,7 +123,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 		$parent_post_id = self::factory()->post->create();
 		$post_id = self::factory()->post->create( array( 'post_parent' => $parent_post_id ) );
-		save_post_repeating_status( $parent_post_id, 'yes' );
+		save_post_repeating_status( $parent_post_id, '1' );
 
 		$this->assertEquals( $parent_post_id, get_repeating_post( $parent_post_id ) );
 		$this->assertEquals( $parent_post_id, get_repeating_post( $post_id ) );
@@ -141,7 +141,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 	function test_create_repeat_post_from_published_repeating_post() {
 
 		$post_id = self::factory()->post->create();
-		save_post_repeating_status( $post_id, 'yes' );
+		save_post_repeating_status( $post_id, '1' );
 
 		$this->assertCount( 0, get_posts( array( 'post_status' => 'future' ) ) );
 
@@ -157,7 +157,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 	function test_create_repeat_post_from_unpublished_repeating_post() {
 
 		$post_id = self::factory()->post->create( array( 'post_status' => 'draft' ) );
-		save_post_repeating_status( $post_id, 'yes' );
+		save_post_repeating_status( $post_id, '1' );
 
 		$this->assertCount( 0, get_posts( array( 'post_status' => 'future' ) ) );
 
@@ -172,7 +172,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 		$this->assertFalse( create_next_repeat_post( $post_id ) );
 		$this->assertCount( 0, get_posts( array( 'post_status' => 'future' ) ) );
 
-		// future post stateses are converted to publish if the post date is in the past
+		// future post statuses are converted to publish if the post date is in the past
 		wp_update_post( array( 'ID' => $post_id, 'post_status' => 'future' ) );
 		$this->assertFalse( create_next_repeat_post( $post_id ) );
 		$this->assertCount( 1, get_posts( array( 'post_status' => 'future' ) ) );
@@ -182,7 +182,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 	function test_create_repeat_post_from_repeating_post_publish_action() {
 
 		$post_id = self::factory()->post->create( array( 'post_status' => 'draft' ) );
-		save_post_repeating_status( $post_id, 'yes' );
+		save_post_repeating_status( $post_id, '1' );
 
 		$this->assertCount( 0, get_posts( array( 'post_status' => 'future' ) ) );
 
@@ -194,7 +194,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 	function test_create_repeat_unsupported_repeating_post_type() {
 
 		$post_id = self::factory()->post->create( array( 'post_type' => 'middle-out-encryption' ) );
-		save_post_repeating_status( $post_id, 'yes' );
+		save_post_repeating_status( $post_id, '1' );
 
 		$this->assertFalse( create_next_repeat_post( $post_id ) );
 
@@ -203,7 +203,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 	function test_create_repeat_post_copies_meta() {
 
 		$post_id = self::factory()->post->create();
-		save_post_repeating_status( $post_id, 'yes' );
+		save_post_repeating_status( $post_id, '1' );
 
 		$meta = array( 'NonEmptyString' => 'Test', 'Int' => 134, 'EmptyString' => '', 'bool' => true, 'object' => get_post( $post_id ), 'array' => get_post( $post_id, ARRAY_A ) );
 
@@ -238,7 +238,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 		$this->assertTrue( has_category( $cat1, $post_id ) );
 		$this->assertTrue( has_category( $cat2, $post_id ) );
 
-		save_post_repeating_status( $post_id, 'yes' );
+		save_post_repeating_status( $post_id, '1' );
 
 		$repeat_post_id = create_next_repeat_post( $post_id );
 
