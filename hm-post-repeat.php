@@ -173,7 +173,6 @@ function save_post_repeating_status( $post_id = null, $post_repeat_setting = nul
  * is published.
  *
  * @param int     $post_id The ID of the post.
- * @param WP_Post $post    The WP_Post object of the post.
  */
 function create_next_repeat_post( $post_id ) {
 
