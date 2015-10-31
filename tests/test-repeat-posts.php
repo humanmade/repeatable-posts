@@ -10,7 +10,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 	function test_setting_post_repeating_status_no() {
 
-		$post_id = self::factory()->post->create();
+		$post_id = $this->factory->post->create();
 		$this->assertFalse( is_repeating_post( $post_id ) );
 
 		save_post_repeating_status( $post_id, 'no' );
@@ -20,7 +20,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 	function test_setting_post_repeating_status_yes() {
 
-		$post_id = self::factory()->post->create();
+		$post_id = $this->factory->post->create();
 		$this->assertFalse( is_repeating_post( $post_id ) );
 
 		save_post_repeating_status( $post_id, 'yes' );
@@ -30,7 +30,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 	function test_setting_post_repeating_status_blank() {
 
-		$post_id = self::factory()->post->create();
+		$post_id = $this->factory->post->create();
 		$this->assertFalse( is_repeating_post( $post_id ) );
 
 		save_post_repeating_status( $post_id, 'yes' );
@@ -56,7 +56,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 	function test_is_repeating_post_save_post_hook() {
 
-		$post_id = self::factory()->post->create();
+		$post_id = $this->factory->post->create();
 		$this->assertFalse( is_repeating_post( $post_id ) );
 
 		$_POST['ID'] = $post_id;
@@ -67,15 +67,15 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 	function test_repeat_post_no() {
 
-		$post_id = self::factory()->post->create();
+		$post_id = $this->factory->post->create();
 		$this->assertFalse( is_repeat_post( $post_id ) );
 
 	}
 
 	function test_repeat_post_yes() {
 
-		$parent_post_id = self::factory()->post->create();
-		$post_id = self::factory()->post->create( array( 'post_parent' => $parent_post_id ) );
+		$parent_post_id = $this->factory->post->create();
+		$post_id = $this->factory->post->create( array( 'post_parent' => $parent_post_id ) );
 
 		$this->assertFalse( is_repeat_post( $post_id ) );
 		$this->assertEquals( $parent_post_id, get_post( $post_id )->post_parent );
@@ -90,8 +90,8 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 		global $post_states;
 
-		$parent_post_id = self::factory()->post->create();
-		$post_id = self::factory()->post->create( array( 'post_parent' => $parent_post_id ) );
+		$parent_post_id = $this->factory->post->create();
+		$post_id = $this->factory->post->create( array( 'post_parent' => $parent_post_id ) );
 		save_post_repeating_status( $parent_post_id, 'yes' );
 
 		// Hack to allow us access to $post_states so we can test it
@@ -121,8 +121,8 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 	function test_create_get_repeating_post() {
 
-		$parent_post_id = self::factory()->post->create();
-		$post_id = self::factory()->post->create( array( 'post_parent' => $parent_post_id ) );
+		$parent_post_id = $this->factory->post->create();
+		$post_id = $this->factory->post->create( array( 'post_parent' => $parent_post_id ) );
 		save_post_repeating_status( $parent_post_id, 'yes' );
 
 		$this->assertEquals( $parent_post_id, get_repeating_post( $parent_post_id ) );
@@ -132,7 +132,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 	function test_create_repeat_post_from_not_repeating() {
 
-		$post_id = self::factory()->post->create();
+		$post_id = $this->factory->post->create();
 		$this->assertFalse( create_next_repeat_post( $post_id ) );
 		$this->assertCount( 0, get_posts( array( 'post_status' => 'future' ) ) );
 
@@ -140,7 +140,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 	function test_create_repeat_post_from_published_repeating_post() {
 
-		$post_id = self::factory()->post->create();
+		$post_id = $this->factory->post->create();
 		save_post_repeating_status( $post_id, 'yes' );
 
 		$this->assertCount( 0, get_posts( array( 'post_status' => 'future' ) ) );
@@ -156,7 +156,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 	function test_create_repeat_post_from_unpublished_repeating_post() {
 
-		$post_id = self::factory()->post->create( array( 'post_status' => 'draft' ) );
+		$post_id = $this->factory->post->create( array( 'post_status' => 'draft' ) );
 		save_post_repeating_status( $post_id, 'yes' );
 
 		$this->assertCount( 0, get_posts( array( 'post_status' => 'future' ) ) );
@@ -181,7 +181,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 	function test_create_repeat_post_from_repeating_post_publish_action() {
 
-		$post_id = self::factory()->post->create( array( 'post_status' => 'draft' ) );
+		$post_id = $this->factory->post->create( array( 'post_status' => 'draft' ) );
 		save_post_repeating_status( $post_id, 'yes' );
 
 		$this->assertCount( 0, get_posts( array( 'post_status' => 'future' ) ) );
@@ -193,7 +193,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 	function test_create_repeat_unsupported_repeating_post_type() {
 
-		$post_id = self::factory()->post->create( array( 'post_type' => 'middle-out-encryption' ) );
+		$post_id = $this->factory->post->create( array( 'post_type' => 'middle-out-encryption' ) );
 		save_post_repeating_status( $post_id, 'yes' );
 
 		$this->assertFalse( create_next_repeat_post( $post_id ) );
@@ -202,7 +202,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 	function test_create_repeat_post_copies_meta() {
 
-		$post_id = self::factory()->post->create();
+		$post_id = $this->factory->post->create();
 		save_post_repeating_status( $post_id, 'yes' );
 
 		$meta = array( 'NonEmptyString' => 'Test', 'Int' => 134, 'EmptyString' => '', 'bool' => true, 'object' => get_post( $post_id ), 'array' => get_post( $post_id, ARRAY_A ) );
@@ -224,13 +224,13 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 	function test_create_repeat_post_copies_terms() {
 
-		$post_id = self::factory()->post->create();
-		self::factory()->term->add_post_terms( $post_id, array( 'Tag 1', 'Tag 2' ), 'post_tag' );
+		$post_id = $this->factory->post->create();
+		$this->factory->term->add_post_terms( $post_id, array( 'Tag 1', 'Tag 2' ), 'post_tag' );
 
-		$cat1 = self::factory()->term->create_object( array( 'taxonomy' => 'category', 'name' => 'Cat 1' ) );
-		$cat2 = self::factory()->term->create_object( array( 'taxonomy' => 'category', 'name' => 'Cat 2' ) );
+		$cat1 = $this->factory->term->create_object( array( 'taxonomy' => 'category', 'name' => 'Cat 1' ) );
+		$cat2 = $this->factory->term->create_object( array( 'taxonomy' => 'category', 'name' => 'Cat 2' ) );
 
-		self::factory()->term->add_post_terms( $post_id, array( $cat1, $cat2 ), 'category' );
+		$this->factory->term->add_post_terms( $post_id, array( $cat1, $cat2 ), 'category' );
 
 		$this->assertTrue( has_tag( 'Tag 1', $post_id ) );
 		$this->assertTrue( has_tag( 'Tag 2', $post_id ) );
