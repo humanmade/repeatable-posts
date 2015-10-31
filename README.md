@@ -5,6 +5,19 @@
 			Designate a post as repeatable and it'll be copied and re-published on a weekly basis.
 		</td>
 		<td align="right" width="30%">
+		
+		<a href="https://codecov.io/github/humanmade/repeatable-posts?branch=master">
+			<img src="https://codecov.io/github/humanmade/repeatable-posts/coverage.svg?branch=master" alt="Coverage via Codecov" />
+		</a>
+		
+		<br />
+		<img src="https://scrutinizer-ci.com/g/humanmade/repeatable-posts/badges/quality-score.png?b=master" alt="Scrutinizer Code Quality Score" />
+		
+		<br />
+		<a href="https://travis-ci.org/humanmade/repeatable-posts">
+			<img src="https://travis-ci.org/humanmade/repeatable-posts.svg?branch=master" alt="Build Status" />
+		</a>
+	
 		</td>
 	</tr>
 	<tr>
