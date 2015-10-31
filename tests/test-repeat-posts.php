@@ -250,4 +250,18 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 	}
 
+	/**
+	 * Specifically test that the repeating status is saved to post meta and the next
+	 * repeat post is created & scheduled when publishing a new repeating post
+	 */
+	function test_publish_repeating_post_creates_repeat_post() {
+
+		$_POST['hm-post-repeat'] = 'weekly';
+		$post_id = self::factory()->post->create();
+		$this->assertTrue( is_repeating_post( $post_id ) );
+
+		$this->assertCount( 1, get_posts( array( 'post_status' => 'future' ) ) );
+
+	}
+
 }
