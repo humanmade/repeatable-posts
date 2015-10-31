@@ -11,8 +11,10 @@
 		</a>
 		
 		<br />
-		<img src="https://scrutinizer-ci.com/g/humanmade/repeatable-posts/badges/quality-score.png?b=master" alt="Scrutinizer Code Quality Score" />
-		
+		<a href="https://scrutinizer-ci.com/g/humanmade/repeatable-posts">
+			<img src="https://scrutinizer-ci.com/g/humanmade/repeatable-posts/badges/quality-score.png?b=master" alt="Scrutinizer Code Quality Score" />
+		</a>
+
 		<br />
 		<a href="https://travis-ci.org/humanmade/repeatable-posts">
 			<img src="https://travis-ci.org/humanmade/repeatable-posts.svg?branch=master" alt="Build Status" />
