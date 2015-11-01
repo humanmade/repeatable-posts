@@ -5,11 +5,11 @@
 			Designate a post as repeatable and it'll be copied and re-published on a weekly basis.
 		</td>
 		<td align="right" width="30%">
-		
+
 		<a href="https://codecov.io/github/humanmade/repeatable-posts?branch=master">
 			<img src="https://codecov.io/github/humanmade/repeatable-posts/coverage.svg?branch=master" alt="Coverage via Codecov" />
 		</a>
-		
+
 		<br />
 		<a href="https://scrutinizer-ci.com/g/humanmade/repeatable-posts">
 			<img src="https://scrutinizer-ci.com/g/humanmade/repeatable-posts/badges/quality-score.png?b=master" alt="Scrutinizer Code Quality Score" />
@@ -19,7 +19,7 @@
 		<a href="https://travis-ci.org/humanmade/repeatable-posts">
 			<img src="https://travis-ci.org/humanmade/repeatable-posts.svg?branch=master" alt="Build Status" />
 		</a>
-	
+
 		</td>
 	</tr>
 	<tr>
@@ -44,14 +44,6 @@ We use this on our internal blogs to schedule recurring reminders and announceme
 
 There's likely some issues already, if not create some! Any code changes should be submitted as Pull Requests. Thanks!
 
-## License
-Repeatable Posts is licensed under the GPLv2 or later.
-
-## Credits
-Created by Human Made.
-
-Written and maintained by [Tom Willmot](https://github.com/willmot).
-
 Interested in joining in on the fun? [Join us, and become human!](https://hmn.md/is/hiring/)
 
 ## UI
@@ -72,3 +64,33 @@ _When editing a post you can easily set whether it should repeat._
 <img src="https://hmn.imgix.net/humanmade-production/uploads/2015/10/Screen-Shot-2015-10-01-at-16.13.28.png" />
 
 _Repeat posts show a convenient link back to the original._
+
+## Changelog
+
+### 0.4
+
+- Increase test coverage above 85%
+- Introduce additional daily & monthly repeating intervals. Props @noplanman.
+
+### 0.3
+
+- Introduce unit tests
+- Fix several critical bugs
+
+### 0.2
+
+- Refactor based on feedback from Human Made team
+
+### 0.1
+
+- Initial release
+
+## License
+
+Repeatable Posts is licensed under the GPLv2 or later.
+
+## Credits
+
+Created by Human Made.
+
+Written and maintained by [Tom Willmot](https://github.com/willmot).
