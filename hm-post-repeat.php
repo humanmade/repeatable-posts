@@ -155,9 +155,16 @@ function save_post_repeating_status( $post_id = null, $post_repeat_setting = nul
 
 	if ( 'no' === $post_repeat_setting ) {
 		delete_post_meta( $post_id, 'hm-post-repeat' );
+		return;
 	}
 
-	else {
+	// Backwards compatibility.
+	if ( '1' === $post_repeat_setting ) {
+		$post_repeat_setting = 'weekly';
+	}
+
+	// Make sure we have a valid schedule.
+	if ( in_array( $post_repeat_setting, array_keys( get_repeating_schedules() ) ) ) {
 		update_post_meta( $post_id, 'hm-post-repeat', $post_repeat_setting );
 	}
 
