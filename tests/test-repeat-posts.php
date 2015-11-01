@@ -363,4 +363,36 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 	}
 
+	function test_get_repeating_schedule_invalid() {
+
+		$_POST['hm-post-repeat'] = 'some-day';
+		$post_id = $this->factory->post->create();
+		$this->assertNull( get_repeating_schedule( $post_id ) );
+
+	}
+
+	function test_get_repeating_schedule_valid() {
+
+		$_POST['hm-post-repeat'] = 'daily';
+		$post_id = $this->factory->post->create();
+		$this->assertSame( array(
+			'interval' => '1 day',
+			'display'  => 'Daily',
+			'slug'     => 'daily',
+		), get_repeating_schedule( $post_id ) );
+
+	}
+
+	function test_get_repeating_schedule_backwards_compatible() {
+
+		$_POST['hm-post-repeat'] = '1';
+		$post_id = $this->factory->post->create();
+		$this->assertSame( array(
+			'interval' => '1 week',
+			'display'  => 'Weekly',
+			'slug'     => 'weekly',
+		), get_repeating_schedule( $post_id ) );
+
+	}
+
 }
