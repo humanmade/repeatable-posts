@@ -383,6 +383,24 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 	}
 
+	/**
+	 * This method assumes an existing old schedule in the post meta.
+	 */
+	function test_get_repeating_schedule_backwards_compatible_old() {
+
+		$post_id = $this->factory->post->create();
+		add_post_meta( $post_id, 'hm-post-repeat', '1' );
+		$this->assertSame( array(
+			'interval' => '1 week',
+			'display'  => 'Weekly',
+			'slug'     => 'weekly',
+		), get_repeating_schedule( $post_id ) );
+
+	}
+
+	/**
+	 * This method already saves the correct schedule to the post meta.
+	 */
 	function test_get_repeating_schedule_backwards_compatible() {
 
 		$_POST['hm-post-repeat'] = '1';
