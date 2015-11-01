@@ -70,7 +70,7 @@ _Repeat posts show a convenient link back to the original._
 ### 0.4
 
 - Increase test coverage above 85%
-- Introduce an additional daily & monthly repeating intervals. Props @noplanman.
+- Introduce additional daily & monthly repeating intervals. Props @noplanman.
 
 ### 0.3
 
