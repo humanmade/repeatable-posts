@@ -23,7 +23,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 		$post_id = $this->factory->post->create();
 		$this->assertFalse( is_repeating_post( $post_id ) );
 
-		save_post_repeating_status( $post_id, 'yes' );
+		save_post_repeating_status( $post_id, 'weekly' );
 		$this->assertTrue( is_repeating_post( $post_id ) );
 
 	}
@@ -33,7 +33,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 		$post_id = $this->factory->post->create();
 		$this->assertFalse( is_repeating_post( $post_id ) );
 
-		save_post_repeating_status( $post_id, 'yes' );
+		save_post_repeating_status( $post_id, 'weekly' );
 		$this->assertTrue( is_repeating_post( $post_id ) );
 
 		save_post_repeating_status( $post_id );
@@ -60,7 +60,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 		$this->assertFalse( is_repeating_post( $post_id ) );
 
 		$_POST['ID'] = $post_id;
-		$_POST['hm-post-repeat'] = 'yes';
+		$_POST['hm-post-repeat'] = 'weekly';
 		$this->assertTrue( is_repeating_post( $post_id ) );
 
 	}
@@ -80,7 +80,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 		$this->assertFalse( is_repeat_post( $post_id ) );
 		$this->assertEquals( $parent_post_id, get_post( $post_id )->post_parent );
 
-		save_post_repeating_status( $parent_post_id, 'yes' );
+		save_post_repeating_status( $parent_post_id, 'weekly' );
 
 		$this->assertTrue( is_repeat_post( $post_id ) );
 
@@ -92,7 +92,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 		$parent_post_id = $this->factory->post->create();
 		$post_id = $this->factory->post->create( array( 'post_parent' => $parent_post_id ) );
-		save_post_repeating_status( $parent_post_id, 'yes' );
+		save_post_repeating_status( $parent_post_id, 'weekly' );
 
 		// Hack to allow us access to $post_states so we can test it
 		add_filter( 'display_post_states', function( $states, $post ) {
@@ -123,7 +123,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 		$parent_post_id = $this->factory->post->create();
 		$post_id = $this->factory->post->create( array( 'post_parent' => $parent_post_id ) );
-		save_post_repeating_status( $parent_post_id, 'yes' );
+		save_post_repeating_status( $parent_post_id, 'weekly' );
 
 		$this->assertEquals( $parent_post_id, get_repeating_post( $parent_post_id ) );
 		$this->assertEquals( $parent_post_id, get_repeating_post( $post_id ) );
@@ -141,7 +141,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 	function test_create_repeat_post_from_published_repeating_post() {
 
 		$post_id = $this->factory->post->create();
-		save_post_repeating_status( $post_id, 'yes' );
+		save_post_repeating_status( $post_id, 'weekly' );
 
 		$this->assertCount( 0, get_posts( array( 'post_status' => 'future' ) ) );
 
@@ -157,7 +157,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 	function test_create_repeat_post_from_unpublished_repeating_post() {
 
 		$post_id = $this->factory->post->create( array( 'post_status' => 'draft' ) );
-		save_post_repeating_status( $post_id, 'yes' );
+		save_post_repeating_status( $post_id, 'weekly' );
 
 		$this->assertCount( 0, get_posts( array( 'post_status' => 'future' ) ) );
 
@@ -172,7 +172,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 		$this->assertFalse( create_next_repeat_post( $post_id ) );
 		$this->assertCount( 0, get_posts( array( 'post_status' => 'future' ) ) );
 
-		// future post stateses are converted to publish if the post date is in the past
+		// future post statuses are converted to publish if the post date is in the past
 		wp_update_post( array( 'ID' => $post_id, 'post_status' => 'future' ) );
 		$this->assertFalse( create_next_repeat_post( $post_id ) );
 		$this->assertCount( 1, get_posts( array( 'post_status' => 'future' ) ) );
@@ -182,7 +182,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 	function test_create_repeat_post_from_repeating_post_publish_action() {
 
 		$post_id = $this->factory->post->create( array( 'post_status' => 'draft' ) );
-		save_post_repeating_status( $post_id, 'yes' );
+		save_post_repeating_status( $post_id, 'weekly' );
 
 		$this->assertCount( 0, get_posts( array( 'post_status' => 'future' ) ) );
 
@@ -194,7 +194,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 	function test_create_repeat_unsupported_repeating_post_type() {
 
 		$post_id = $this->factory->post->create( array( 'post_type' => 'middle-out-encryption' ) );
-		save_post_repeating_status( $post_id, 'yes' );
+		save_post_repeating_status( $post_id, 'weekly' );
 
 		$this->assertFalse( create_next_repeat_post( $post_id ) );
 
@@ -203,7 +203,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 	function test_create_repeat_post_copies_meta() {
 
 		$post_id = $this->factory->post->create();
-		save_post_repeating_status( $post_id, 'yes' );
+		save_post_repeating_status( $post_id, 'weekly' );
 
 		$meta = array( 'NonEmptyString' => 'Test', 'Int' => 134, 'EmptyString' => '', 'bool' => true, 'object' => get_post( $post_id ), 'array' => get_post( $post_id, ARRAY_A ) );
 
@@ -238,7 +238,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 		$this->assertTrue( has_category( $cat1, $post_id ) );
 		$this->assertTrue( has_category( $cat2, $post_id ) );
 
-		save_post_repeating_status( $post_id, 'yes' );
+		save_post_repeating_status( $post_id, 'weekly' );
 
 		$repeat_post_id = create_next_repeat_post( $post_id );
 
@@ -247,6 +247,180 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 		$this->assertTrue( has_category( $cat1, $repeat_post_id ) );
 		$this->assertTrue( has_category( $cat2, $repeat_post_id ) );
+
+	}
+
+	/**
+	 * Specifically test that the repeating status is saved to post meta and the next
+	 * repeat post is created & scheduled when publishing a new repeating post
+	 */
+	function test_publish_repeating_post_creates_repeat_post() {
+
+		$_POST['hm-post-repeat'] = 'weekly';
+		$post_id = $this->factory->post->create();
+		$this->assertTrue( is_repeating_post( $post_id ) );
+
+		$this->assertCount( 1, get_posts( array( 'post_status' => 'future' ) ) );
+
+	}
+
+	function test_repeating_post_interval_invalid() {
+
+		$_POST['hm-post-repeat'] = 'some-day';
+		$post = $this->factory->post->create_and_get();
+		$this->assertFalse( is_repeating_post( $post->ID ) );
+
+		$future_posts = get_posts( array( 'post_status' => 'future' ) );
+		$this->assertCount( 0, $future_posts );
+
+	}
+
+	function test_add_custom_repeating_schedule() {
+
+		add_filter( 'hm_post_repeat_schedules', function( $schedules ) {
+
+			$schedules['yearly'] = array( 'interval' => '1 year', 'display' => 'Yearly' );
+			return $schedules;
+
+		} );
+
+		$this->assertTrue( key_exists( 'yearly', get_repeating_schedules() ) );
+
+	}
+
+	function test_repeating_post_interval_custom() {
+
+		add_filter( 'hm_post_repeat_schedules', function( $schedules ) {
+
+			$schedules['3-days'] = array( 'interval' => '3 days', 'display' => 'Every 3 days' );
+			return $schedules;
+
+		} );
+
+		$_POST['hm-post-repeat'] = '3-days';
+		$post = $this->factory->post->create_and_get();
+		$this->assertTrue( is_repeating_post( $post->ID ) );
+
+		$future_posts = get_posts( array( 'post_status' => 'future' ) );
+		$this->assertCount( 1, $future_posts );
+
+		$repeat_post = reset( $future_posts );
+		$this->assertTrue( is_repeat_post( $repeat_post->ID ) );
+
+		$next_post_date = date( 'Y-m-d H:i:s', strtotime( $post->post_date . ' + 3 days' ) );
+		$this->assertSame( $repeat_post->post_date, $next_post_date );
+
+	}
+
+	function test_repeating_post_interval_daily() {
+
+		$_POST['hm-post-repeat'] = 'daily';
+		$post = $this->factory->post->create_and_get();
+		$this->assertTrue( is_repeating_post( $post->ID ) );
+
+		$future_posts = get_posts( array( 'post_status' => 'future' ) );
+		$this->assertCount( 1, $future_posts );
+
+		$repeat_post = reset( $future_posts );
+		$this->assertTrue( is_repeat_post( $repeat_post->ID ) );
+
+		$next_post_date = date( 'Y-m-d H:i:s', strtotime( $post->post_date . ' + 1 day' ) );
+		$this->assertSame( $repeat_post->post_date, $next_post_date );
+
+	}
+
+	function test_repeating_post_interval_weekly() {
+
+		$_POST['hm-post-repeat'] = 'weekly';
+		$post = $this->factory->post->create_and_get();
+		$this->assertTrue( is_repeating_post( $post->ID ) );
+
+		$future_posts = get_posts( array( 'post_status' => 'future' ) );
+		$this->assertCount( 1, $future_posts );
+
+		$repeat_post = reset( $future_posts );
+		$this->assertTrue( is_repeat_post( $repeat_post->ID ) );
+
+		$next_post_date = date( 'Y-m-d H:i:s', strtotime( $post->post_date . ' + 1 week' ) );
+		$this->assertSame( $repeat_post->post_date, $next_post_date );
+
+	}
+
+	function test_repeating_post_interval_monthly() {
+
+		$_POST['hm-post-repeat'] = 'monthly';
+		$post = $this->factory->post->create_and_get();
+		$this->assertTrue( is_repeating_post( $post->ID ) );
+
+		$future_posts = get_posts( array( 'post_status' => 'future' ) );
+		$this->assertCount( 1, $future_posts );
+
+		$repeat_post = reset( $future_posts );
+		$this->assertTrue( is_repeat_post( $repeat_post->ID ) );
+
+		$next_post_date = date( 'Y-m-d H:i:s', strtotime( $post->post_date . ' + 1 month' ) );
+		$this->assertSame( $repeat_post->post_date, $next_post_date );
+
+	}
+
+	/**
+	 * This test assumes that the meta data was invalidly set directly in the database.
+	 */
+	function test_get_repeating_schedule_invalid_direct_db_entry() {
+
+		$post_id = $this->factory->post->create();
+		add_post_meta( $post_id, 'hm-post-repeat', 'some-day' );
+		$this->assertNull( get_repeating_schedule( $post_id ) );
+
+	}
+
+	function test_get_repeating_schedule_invalid() {
+
+		$_POST['hm-post-repeat'] = 'some-day';
+		$post_id = $this->factory->post->create();
+		$this->assertNull( get_repeating_schedule( $post_id ) );
+
+	}
+
+	/**
+	 * This test assumes that the meta data was correctly set directly in the database.
+	 */
+	function test_get_repeating_schedule_valid_direct_db_entry() {
+
+		$post_id = $this->factory->post->create();
+		add_post_meta( $post_id, 'hm-post-repeat', 'daily' );
+		$this->assertSame( array(
+			'interval' => '1 day',
+			'display'  => 'Daily',
+			'slug'     => 'daily',
+		), get_repeating_schedule( $post_id ) );
+
+	}
+
+	function test_get_repeating_schedule_valid() {
+
+		$_POST['hm-post-repeat'] = 'daily';
+		$post_id = $this->factory->post->create();
+		$this->assertSame( array(
+			'interval' => '1 day',
+			'display'  => 'Daily',
+			'slug'     => 'daily',
+		), get_repeating_schedule( $post_id ) );
+
+	}
+
+	/**
+	 * This method assumes an existing old schedule format in the post meta.
+	 */
+	function test_get_repeating_schedule_backwards_compatible_old() {
+
+		$post_id = $this->factory->post->create();
+		add_post_meta( $post_id, 'hm-post-repeat', '1' );
+		$this->assertSame( array(
+			'interval' => '1 week',
+			'display'  => 'Weekly',
+			'slug'     => 'weekly',
+		), get_repeating_schedule( $post_id ) );
 
 	}
 
