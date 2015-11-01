@@ -264,4 +264,103 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 	}
 
+	function test_repeating_post_interval_invalid() {
+
+		$_POST['hm-post-repeat'] = 'some-day';
+		$post = $this->factory->post->create_and_get();
+		$this->assertFalse( is_repeating_post( $post->ID ) );
+
+		$future_posts = get_posts( array( 'post_status' => 'future' ) );
+		$this->assertCount( 0, $future_posts );
+
+	}
+
+	function test_add_custom_repeating_schedule() {
+
+		add_filter( 'hm_post_repeat_schedules', function( $schedules ) {
+
+			$schedules['yearly'] = array( 'interval' => '1 year', 'display' => 'Yearly' );
+			return $schedules;
+
+		} );
+
+		$this->assertTrue( key_exists( 'yearly', get_repeating_schedules() ) );
+
+	}
+
+	function test_repeating_post_interval_custom() {
+
+		add_filter( 'hm_post_repeat_schedules', function( $schedules ) {
+
+			$schedules['3-days'] = array( 'interval' => '3 days', 'display' => 'Every 3 days' );
+			return $schedules;
+
+		} );
+
+		$_POST['hm-post-repeat'] = '3-days';
+		$post = $this->factory->post->create_and_get();
+		$this->assertTrue( is_repeating_post( $post->ID ) );
+
+		$future_posts = get_posts( array( 'post_status' => 'future' ) );
+		$this->assertCount( 1, $future_posts );
+
+		$repeat_post = reset( $future_posts );
+		$this->assertTrue( is_repeat_post( $repeat_post->ID ) );
+
+		$next_post_date = date( 'Y-m-d H:i:s', strtotime( $post->post_date . ' + 3 days' ) );
+		$this->assertSame( $repeat_post->post_date, $next_post_date );
+
+	}
+
+	function test_repeating_post_interval_daily() {
+
+		$_POST['hm-post-repeat'] = 'daily';
+		$post = $this->factory->post->create_and_get();
+		$this->assertTrue( is_repeating_post( $post->ID ) );
+
+		$future_posts = get_posts( array( 'post_status' => 'future' ) );
+		$this->assertCount( 1, $future_posts );
+
+		$repeat_post = reset( $future_posts );
+		$this->assertTrue( is_repeat_post( $repeat_post->ID ) );
+
+		$next_post_date = date( 'Y-m-d H:i:s', strtotime( $post->post_date . ' + 1 day' ) );
+		$this->assertSame( $repeat_post->post_date, $next_post_date );
+
+	}
+
+	function test_repeating_post_interval_weekly() {
+
+		$_POST['hm-post-repeat'] = 'weekly';
+		$post = $this->factory->post->create_and_get();
+		$this->assertTrue( is_repeating_post( $post->ID ) );
+
+		$future_posts = get_posts( array( 'post_status' => 'future' ) );
+		$this->assertCount( 1, $future_posts );
+
+		$repeat_post = reset( $future_posts );
+		$this->assertTrue( is_repeat_post( $repeat_post->ID ) );
+
+		$next_post_date = date( 'Y-m-d H:i:s', strtotime( $post->post_date . ' + 1 week' ) );
+		$this->assertSame( $repeat_post->post_date, $next_post_date );
+
+	}
+
+	function test_repeating_post_interval_monthly() {
+
+		$_POST['hm-post-repeat'] = 'monthly';
+		$post = $this->factory->post->create_and_get();
+		$this->assertTrue( is_repeating_post( $post->ID ) );
+
+		$future_posts = get_posts( array( 'post_status' => 'future' ) );
+		$this->assertCount( 1, $future_posts );
+
+		$repeat_post = reset( $future_posts );
+		$this->assertTrue( is_repeat_post( $repeat_post->ID ) );
+
+		$next_post_date = date( 'Y-m-d H:i:s', strtotime( $post->post_date . ' + 1 month' ) );
+		$this->assertSame( $repeat_post->post_date, $next_post_date );
+
+	}
+
 }
