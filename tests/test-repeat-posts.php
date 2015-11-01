@@ -363,11 +363,37 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 	}
 
+	/**
+	 * This test assumes that the meta data was invalidly set directly in the database.
+	 */
+	function test_get_repeating_schedule_invalid_direct_db_entry() {
+
+		$post_id = $this->factory->post->create();
+		add_post_meta( $post_id, 'hm-post-repeat', 'some-day' );
+		$this->assertNull( get_repeating_schedule( $post_id ) );
+
+	}
+
 	function test_get_repeating_schedule_invalid() {
 
 		$_POST['hm-post-repeat'] = 'some-day';
 		$post_id = $this->factory->post->create();
 		$this->assertNull( get_repeating_schedule( $post_id ) );
+
+	}
+
+	/**
+	 * This test assumes that the meta data was correctly set directly in the database.
+	 */
+	function test_get_repeating_schedule_valid_direct_db_entry() {
+
+		$post_id = $this->factory->post->create();
+		add_post_meta( $post_id, 'hm-post-repeat', 'daily' );
+		$this->assertSame( array(
+			'interval' => '1 day',
+			'display'  => 'Daily',
+			'slug'     => 'daily',
+		), get_repeating_schedule( $post_id ) );
 
 	}
 
@@ -384,7 +410,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 	}
 
 	/**
-	 * This method assumes an existing old schedule in the post meta.
+	 * This method assumes an existing old schedule format in the post meta.
 	 */
 	function test_get_repeating_schedule_backwards_compatible_old() {
 
@@ -399,7 +425,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 	}
 
 	/**
-	 * This method already saves the correct schedule to the post meta.
+	 * This method already saves the correct schedule format to the post meta.
 	 */
 	function test_get_repeating_schedule_backwards_compatible() {
 
