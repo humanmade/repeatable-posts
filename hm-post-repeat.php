@@ -114,7 +114,8 @@ function publish_box_ui() {
  *
  * By default post states are displayed on the Edit Post screen in bold after the post title.
  *
- * @param array $post_states The original array of post states.
+ * @param array   $post_states The original array of post states.
+ * @param WP_Post $post        The post object to get / return the states.
  * @return array The array of post states with ours added.
  */
 function post_states( $post_states, $post ) {
@@ -142,6 +143,9 @@ function post_states( $post_states, $post ) {
  * Save the repeating status to post meta.
  *
  * Hooked into `save_post`. When saving a post that has been set to repeat we save a post meta entry.
+ *
+ * @param int    $post_id             The ID of the post.
+ * @param string $post_repeat_setting Used to manually set the repeating schedule from tests.
  */
 function save_post_repeating_status( $post_id = null, $post_repeat_setting = null ) {
 
@@ -172,14 +176,14 @@ function save_post_repeating_status( $post_id = null, $post_repeat_setting = nul
 
 
 /**
-* Create the next repeat post when the last one is published.
+ * Create the next repeat post when the last one is published.
  *
  * When a repeat post (or the original) is published we copy and schedule a new post
  * to publish on the correct interval. That way the next repeat post is always ready to go.
  * This is hooked into publish_post so that the repeat post is only created when the original
  * is published.
  *
- * @param int     $post_id The ID of the post.
+ * @param int $post_id The ID of the post.
  */
 function create_next_repeat_post( $post_id ) {
 
@@ -337,7 +341,7 @@ function get_repeating_schedule( $post_id ) {
 	$schedules = get_repeating_schedules();
 
 	// Backwards compatibility with 0.3 when we only supported weekly
-	if ( $repeating_schedule === '1' ) {
+	if ( '1' === $repeating_schedule ) {
 		$repeating_schedule = 'weekly';
 	}
 
