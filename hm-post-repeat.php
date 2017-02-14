@@ -40,6 +40,7 @@ add_action( 'save_post', __NAMESPACE__ . '\save_post_repeating_status', 10 );
 add_action( 'save_post', __NAMESPACE__ . '\create_next_repeat_post', 11 );
 add_action( 'admin_enqueue_scripts', __NAMESPACE__ . '\enqueue_scripts' );
 add_filter( 'display_post_states', __NAMESPACE__ . '\post_states', 10, 2 );
+add_filter( 'hm_post_repeat_scheduled_post', __NAMESPACE__ . '\insert_date', 10, 2 );
 
 /**
  * Enqueue the scripts and styles that are needed by this plugin.
@@ -238,6 +239,15 @@ function create_next_repeat_post( $post_id ) {
 		return false;
 	}
 
+	/**
+	 * You can use this filter to modify the scheduled post before it gets stored
+	 *
+	 * @param array $next_post     The post data about to be saved
+	 * @param
+	 * @param array $original_post The original repeating post
+	 */
+	$next_post = apply_filters( 'hm_post_repeat_scheduled_post', $next_post, $repeating_schedule, $original_post );
+
 	// All checks done, get that post scheduled!
 	$next_post_id = wp_insert_post( wp_slash( $next_post ), true );
 
@@ -430,4 +440,31 @@ function get_repeating_post( $post_id ) {
 
 	return $original_post_id;
 
+}
+
+/**
+ * Add support for a placeholder [date] in the title, this will be replaced
+ * when the post is scheduled.
+ *
+ * @param array $next_post The scheduled post data array
+ * @param array $schedule  The schedule array
+ * @return array
+ */
+function insert_date( $next_post, $schedule ) {
+
+	switch( $schedule['slug'] ) {
+		case 'weekly':
+			$format = '\W\e\e\k W Y';
+			break;
+		case 'monthly':
+			$format = 'F Y';
+			break;
+		default:
+			$format = get_option( 'date_format', 'Y-m-d' );
+	}
+
+	// Expand the placeholder
+	$next_post['post_title'] = str_replace( '[date]', date( $format, strtotime( $next_post['date'] ) ), $next_post['title'] );
+
+	return $next_post;
 }

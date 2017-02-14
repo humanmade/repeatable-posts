@@ -424,4 +424,20 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 	}
 
+	/**
+	 * Tests that the built in placeholder is properly expanded
+	 */
+	function test_repeat_post_replaces_placeholder() {
+
+		$_POST['hm-post-repeat'] = 'weekly';
+		$this->factory->post->create( array(
+			'post_title' => 'Scheduled post [date]',
+			'post_date'  => '2017-02-13 12:00:00',
+		) );
+
+		$repeat_posts = get_posts( array( 'post_status' => 'future' ) );
+
+		$this->assertSame( $repeat_posts[0]->post_title, 'Scheduled post Week 7 2017' );
+	}
+
 }
