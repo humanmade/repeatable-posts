@@ -424,4 +424,39 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 	}
 
+	/**
+	 * Tests that a repeat post is modified via filter before being saved/scheduled.
+	 * Only repeat posts with a specific schedule are modified.
+	 */
+	function test_edit_repeat_post_before_scheduling() {
+
+		// Edit repeat post title if it's on weekly schedule.
+		add_filter( 'hm_post_repeat_edit_repeat_post', function( $next_post, $repeating_schedule, $original_post ) {
+
+			if ( $repeating_schedule['slug'] === 'weekly' ) {
+				$next_post['post_title'] = 'Repeat Post Week 1, 2018';
+			}
+
+			return $next_post;
+		}, 10, 3 );
+
+		// Create main repeating post and schedule to repeat it weekly.
+		$_POST['hm-post-repeat'] = 'weekly';
+		$post_id = $this->factory->post->create( array(
+			'post_title'  => 'Repeating Post',
+			'post_status' => 'publish',
+		) );
+
+		// Check repeating post is there with its original title.
+		$this->assertTrue( is_repeating_post( $post_id ) );
+		$this->assertSame( get_the_title( $post_id ) , 'Repeating Post' );
+
+		// Check repeat post is scheduled with a new title.
+		$repeat_posts = get_posts( array( 'post_status' => 'future' ) );
+
+		$this->assertNotEmpty( $repeat_posts );
+		$this->assertTrue( is_repeat_post( $repeat_posts[0]->ID ) );
+		$this->assertSame( $repeat_posts[0]->post_title, 'Repeat Post Week 1, 2018' );
+	}
+
 }

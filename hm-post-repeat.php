@@ -238,6 +238,15 @@ function create_next_repeat_post( $post_id ) {
 		return false;
 	}
 
+	/**
+	 * Use this filter to modify the scheduled post before it gets stored.
+	 *
+	 * @param array $next_post          The post data about to be saved.
+	 * @param array $repeating_schedule Repeating schedule info.
+	 * @param array $original_post      The original repeating post.
+	 */
+	$next_post = apply_filters( 'hm_post_repeat_edit_repeat_post', $next_post, $repeating_schedule, $original_post );
+
 	// All checks done, get that post scheduled!
 	$next_post_id = wp_insert_post( wp_slash( $next_post ), true );
 
