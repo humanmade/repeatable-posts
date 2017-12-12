@@ -1,7 +1,8 @@
 language: php
 sudo: false
 php:
-  - 5.3
+  - 5.6
+  - 7.0
 
 env:
   - WP_VERSION=master WP_MULTISITE=0
