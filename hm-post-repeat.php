@@ -36,10 +36,10 @@ namespace HM\Post_Repeat;
  * Setup the actions and filters required by this class.
  */
 add_action( 'post_submitbox_misc_actions', __NAMESPACE__ . '\publish_box_ui' );
-add_action( 'save_post', __NAMESPACE__ . '\save_post_repeating_status', 10 );
-add_action( 'save_post', __NAMESPACE__ . '\create_next_repeat_post', 11 );
-add_action( 'admin_enqueue_scripts', __NAMESPACE__ . '\enqueue_scripts' );
-add_filter( 'display_post_states', __NAMESPACE__ . '\post_states', 10, 2 );
+add_action( 'save_post',                   __NAMESPACE__ . '\save_post_repeating_status', 10 );
+add_action( 'save_post',                   __NAMESPACE__ . '\create_next_repeat_post', 11 );
+add_action( 'admin_enqueue_scripts',       __NAMESPACE__ . '\enqueue_scripts' );
+add_filter( 'display_post_states',         __NAMESPACE__ . '\admin_table_row_post_states', 10, 2 );
 
 /**
  * Enqueue the scripts and styles that are needed by this plugin.
@@ -118,7 +118,7 @@ function publish_box_ui() {
  * @param WP_Post $post        The post object to get / return the states.
  * @return array The array of post states with ours added.
  */
-function post_states( $post_states, $post ) {
+function admin_table_row_post_states( $post_states, $post ) {
 
 	if ( is_repeating_post( $post->ID ) ) {
 
@@ -136,7 +136,6 @@ function post_states( $post_states, $post ) {
 	}
 
 	return $post_states;
-
 }
 
 /**
