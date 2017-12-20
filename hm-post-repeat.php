@@ -41,14 +41,15 @@ add_action( 'save_post',                   __NAMESPACE__ . '\create_next_repeat_
 add_action( 'admin_enqueue_scripts',       __NAMESPACE__ . '\enqueue_scripts' );
 add_filter( 'display_post_states',         __NAMESPACE__ . '\admin_table_row_post_states', 10, 2 );
 
-// Add repeat type table view links to admin screen.
+// Add repeat type table view links to admin screen for each CPT that supports Repeatable Posts.
 add_action( 'init', function() {
 	foreach ( repeating_post_types() as $post_type ) {
 		add_filter( "views_edit-{$post_type}", __NAMESPACE__ . '\admin_table_views_links' );
 	}
 } );
 
-add_filter( 'pre_get_posts',               __NAMESPACE__ . '\admin_table_repeat_type_posts_query' );
+// Display only Repeatable Posts in admin table view for registered view links.
+add_filter( 'pre_get_posts', __NAMESPACE__ . '\admin_table_repeat_type_posts_query' );
 
 /**
  * Enqueue the scripts and styles that are needed by this plugin.
@@ -504,7 +505,8 @@ function admin_table_views_links( $views ) {
  */
 function admin_table_repeat_type_posts_query( $wp_query ) {
 
-	if ( ! is_admin() ) {
+	// Stop - if not admin or not main query (there are secondary WP_Query for counting posts for view links, etc).
+	if ( ! is_admin() || ! $wp_query->is_main_query() ) {
 		return $wp_query;
 	}
 
@@ -515,6 +517,7 @@ function admin_table_repeat_type_posts_query( $wp_query ) {
 		return $wp_query;
 	}
 
+	// Add a table view link per each repeat type.
 	foreach ( get_repeat_type_query_params( $repeat_type ) as $key => $value ) {
 		$wp_query->set( $key, $value );
 	}
@@ -523,8 +526,8 @@ function admin_table_repeat_type_posts_query( $wp_query ) {
 }
 
 /**
- * Returns array of custom WP_Query params, to get posts
- * of specified repeat type.
+ * Returns array of custom WP_Query params to get posts of specified repeat type.
+ * Works for all CPT that support Repeatable Posts.
  *
  * @param string $repeat_type Repeat type of posts to get.
  *
