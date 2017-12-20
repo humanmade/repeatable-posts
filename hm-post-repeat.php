@@ -456,28 +456,29 @@ function get_repeating_post( $post_id ) {
  */
 function admin_table_views_links( $views ) {
 
-	$post_type = get_current_screen()->post_type;
-
 	// Add status link for each repeat type.
 	foreach ( get_available_repeat_types() as $repeat_type => $repeat_desc ) {
 
-		$query_args = array(
-			'post_type'      => $post_type,
+		$url_args = array(
+			'post_type'      => get_current_screen()->post_type,
 			'hm-post-repeat' => $repeat_type,
 		);
 
-		// TO DO: add logic for getting the number of the posts correctly.
+		// Custom WP_Query to get posts count of repeat type.
+		$repeat_type_query = new \WP_Query( get_repeat_type_query_params( $repeat_type ) );
+
 		$link_label = sprintf(
-			$repeat_desc . ' <span class="count">(%s)</span>',
-			number_format_i18n( 13 )
+				'%s <span class="count">(%s)</span>',
+			$repeat_desc,
+			number_format_i18n( $repeat_type_query->post_count )
 		);
 
 		// Add current class to the link to highlight it when it's selected.
-		$class_html = ( $repeat_type === get_repeat_type_url_param() ) ? ' class="current"' : '';
+		$class_html = ( get_repeat_type_url_param() === $repeat_type ) ? ' class="current"' : '';
 
 		$link_html = sprintf(
 			'<a href="%s"%s>%s</a>',
-			esc_url( add_query_arg( $query_args, 'edit.php' ) ),
+			esc_url( add_query_arg( $url_args, 'edit.php' ) ),
 			$class_html,
 			$link_label
 		);
@@ -509,22 +510,41 @@ function admin_table_repeat_type_posts_query( $wp_query ) {
 		return $wp_query;
 	}
 
+	foreach ( get_repeat_type_query_params( $repeat_type ) as $key => $value ) {
+		$wp_query->set( $key, $value );
+	}
+
+	return $wp_query;
+}
+
+/**
+ * Returns array of custom WP_Query params, to get posts
+ * of specified repeat type.
+ *
+ * @param string $repeat_type Repeat type of posts to get.
+ *
+ * @return array Array of custom WP_Query params.
+ */
+function get_repeat_type_query_params( $repeat_type ) {
+
+	$query['post_type'] = get_current_screen()->post_type;
+
 	// Construct custom query to get posts of specified repeat type.
-	$wp_query->set( 'meta_query', array(
+	$query['meta_query'] = array(
 			array(
 					'key'     => 'hm-post-repeat',
 					'compare' => 'EXISTS',
 			),
-	) );
+	);
 
 	if ( $repeat_type === 'repeat' ) {
-		$wp_query->set( 'post_parent__not_in', array( 0 ) );
+		$query['post_parent__not_in'] = array( 0 );
 
 	} elseif ( $repeat_type === 'repeating' ) {
-		$wp_query->set( 'post_parent', 0 );
+		$query['post_parent__in'] = array( 0 );
 	}
 
-	return $wp_query;
+	return $query;
 }
 
 /**
