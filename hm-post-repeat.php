@@ -41,8 +41,13 @@ add_action( 'save_post',                   __NAMESPACE__ . '\create_next_repeat_
 add_action( 'admin_enqueue_scripts',       __NAMESPACE__ . '\enqueue_scripts' );
 add_filter( 'display_post_states',         __NAMESPACE__ . '\admin_table_row_post_states', 10, 2 );
 
-// Add repeat type table view to admin screen.
-add_filter( 'views_edit-post',             __NAMESPACE__ . '\admin_table_views_links' );
+// Add repeat type table view links to admin screen.
+add_action( 'init', function() {
+	foreach ( repeating_post_types() as $post_type ) {
+		add_filter( "views_edit-{$post_type}", __NAMESPACE__ . '\admin_table_views_links' );
+	}
+} );
+
 add_filter( 'pre_get_posts',               __NAMESPACE__ . '\admin_table_repeat_type_posts_query' );
 
 /**
