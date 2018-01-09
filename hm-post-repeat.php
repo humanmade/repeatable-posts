@@ -36,10 +36,20 @@ namespace HM\Post_Repeat;
  * Setup the actions and filters required by this class.
  */
 add_action( 'post_submitbox_misc_actions', __NAMESPACE__ . '\publish_box_ui' );
-add_action( 'save_post', __NAMESPACE__ . '\save_post_repeating_status', 10 );
-add_action( 'save_post', __NAMESPACE__ . '\create_next_repeat_post', 11 );
-add_action( 'admin_enqueue_scripts', __NAMESPACE__ . '\enqueue_scripts' );
-add_filter( 'display_post_states', __NAMESPACE__ . '\post_states', 10, 2 );
+add_action( 'save_post',                   __NAMESPACE__ . '\save_post_repeating_status', 10 );
+add_action( 'save_post',                   __NAMESPACE__ . '\create_next_repeat_post', 11 );
+add_action( 'admin_enqueue_scripts',       __NAMESPACE__ . '\enqueue_scripts' );
+add_filter( 'display_post_states',         __NAMESPACE__ . '\admin_table_row_post_states', 10, 2 );
+
+// Add repeat type table view links to admin screen for each CPT that supports Repeatable Posts.
+add_action( 'init', function() {
+	foreach ( repeating_post_types() as $post_type ) {
+		add_filter( "views_edit-{$post_type}", __NAMESPACE__ . '\admin_table_views_links' );
+	}
+} );
+
+// Display only Repeatable Posts in admin table view for registered view links.
+add_filter( 'pre_get_posts', __NAMESPACE__ . '\admin_table_repeat_type_posts_query' );
 
 /**
  * Enqueue the scripts and styles that are needed by this plugin.
@@ -118,7 +128,7 @@ function publish_box_ui() {
  * @param WP_Post $post        The post object to get / return the states.
  * @return array The array of post states with ours added.
  */
-function post_states( $post_states, $post ) {
+function admin_table_row_post_states( $post_states, $post ) {
 
 	if ( is_repeating_post( $post->ID ) ) {
 
@@ -136,7 +146,6 @@ function post_states( $post_states, $post ) {
 	}
 
 	return $post_states;
-
 }
 
 /**
@@ -439,4 +448,143 @@ function get_repeating_post( $post_id ) {
 
 	return $original_post_id;
 
+}
+
+/**
+ * Adds admin table view link per available repeat type.
+ * So that only all posts of specific repeat type are displayed.
+ *
+ * Added at the end of link list for All | Mine | Published | Scheduled | Drafts
+ *
+ * @param array $views An array of available list table views.
+ *
+ * @return array Available list of table views with custom added views per repeat type.
+ */
+function admin_table_views_links( $views ) {
+
+	// Add status link for each repeat type.
+	foreach ( get_available_repeat_types() as $repeat_type => $repeat_desc ) {
+
+		$url_args = array(
+			'post_type'      => get_current_screen()->post_type,
+			'hm-post-repeat' => $repeat_type,
+		);
+
+		// Custom WP_Query to get posts count of repeat type.
+		$repeat_type_query = new \WP_Query( get_repeat_type_query_params( $repeat_type ) );
+
+		$link_label = sprintf(
+				'%s <span class="count">(%s)</span>',
+			esc_html( $repeat_desc ),
+			esc_html( number_format_i18n( $repeat_type_query->post_count ) )
+		);
+
+		// Add current class to the link to highlight it when it's selected.
+		$class_html = ( get_repeat_type_url_param() === $repeat_type ) ? ' class="current"' : '';
+
+		$link_html = sprintf(
+			'<a href="%s"%s>%s</a>',
+			esc_url( add_query_arg( $url_args, 'edit.php' ) ),
+			$class_html, // html - hardcoded, no need to escape.
+			$link_label  // html - escaped earlier in the code.
+		);
+
+		$views[ $repeat_type ] = $link_html;
+	}
+
+	return $views;
+}
+
+/**
+ * Customizes main admin query to get posts of specified repeat type
+ * to be displayed in the admin table.
+ *
+ * @param \WP_Query $wp_query Main admin query.
+ *
+ * @return mixed Main admin query with edited params to get posts of specified repeat type.
+ */
+function admin_table_repeat_type_posts_query( $wp_query ) {
+
+	// Stop - if not admin or not main query (there are secondary WP_Query for counting posts for view links, etc).
+	if ( ! is_admin() || ! $wp_query->is_main_query() ) {
+		return $wp_query;
+	}
+
+	// Get URL query param for repeat type and check it's valid.
+	$repeat_type = get_repeat_type_url_param();
+
+	if ( ! $repeat_type || ! is_allowed_repeat_type( $repeat_type ) ) {
+		return $wp_query;
+	}
+
+	// Add a table view link per each repeat type.
+	foreach ( get_repeat_type_query_params( $repeat_type ) as $key => $value ) {
+		$wp_query->set( $key, $value );
+	}
+
+	return $wp_query;
+}
+
+/**
+ * Returns array of custom WP_Query params to get posts of specified repeat type.
+ * Works for all CPT that support Repeatable Posts.
+ *
+ * @param string $repeat_type Repeat type of posts to get.
+ *
+ * @return array Array of custom WP_Query params.
+ */
+function get_repeat_type_query_params( $repeat_type ) {
+
+	$query['post_type'] = get_current_screen()->post_type;
+
+	// Construct custom query to get posts of specified repeat type.
+	$query['meta_query'] = array(
+			array(
+					'key'     => 'hm-post-repeat',
+					'compare' => 'EXISTS',
+			),
+	);
+
+	if ( $repeat_type === 'repeat' ) {
+		$query['post_parent__not_in'] = array( 0 );
+
+	} elseif ( $repeat_type === 'repeating' ) {
+		$query['post_parent__in'] = array( 0 );
+	}
+
+	return $query;
+}
+
+/**
+ * Get URL query param for the repeat type of posts being displayed
+ * in the admin post table.
+ *
+ * @return string Sanitized string of repeat type being displayed.
+ */
+function get_repeat_type_url_param() {
+	return isset( $_GET['hm-post-repeat'] ) ? sanitize_text_field( $_GET['hm-post-repeat'] ) : '';
+}
+
+/**
+ * Return available repeat types, i.e. repeating or repeat.
+ *
+ * @return array Available repeat types.
+ */
+function get_available_repeat_types() {
+	return array(
+		'repeating' => __( 'Repeating', 'hm-post-repeat' ),
+		'repeat'    => __( 'Repeat', 'hm-post-repeat' ),
+	);
+}
+
+/**
+ * Check if a repeat type is valid.
+ *
+ * @param string $repeat_type Repeat type to check.
+ *
+ * @return bool True if repeat type is valid,
+ *              False otherwise.
+ */
+function is_allowed_repeat_type( $repeat_type ) {
+	return in_array( $repeat_type, array_keys( get_available_repeat_types() ) );
 }
