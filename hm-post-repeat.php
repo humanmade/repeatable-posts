@@ -475,7 +475,7 @@ function admin_table_views_links( $views ) {
 
 		$link_label = sprintf(
 				'%s <span class="count">(%s)</span>',
-			$repeat_desc,
+			esc_html( $repeat_desc ),
 			number_format_i18n( $repeat_type_query->post_count )
 		);
 
@@ -485,8 +485,8 @@ function admin_table_views_links( $views ) {
 		$link_html = sprintf(
 			'<a href="%s"%s>%s</a>',
 			esc_url( add_query_arg( $url_args, 'edit.php' ) ),
-			$class_html,
-			$link_label
+			$class_html, // html - hardcoded, no need to escape.
+			$link_label  // html - escaped earlier in the code.
 		);
 
 		$views[ $repeat_type ] = $link_html;
