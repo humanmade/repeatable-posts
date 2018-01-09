@@ -656,12 +656,37 @@ function admin_table_row_actions_view_repeat_posts( $actions, $post ) {
 		$actions['view_repeat'] = sprintf(
 			'<a href="%s" aria-label="%s">%s</a>',
 			esc_url( add_query_arg( $url_args, 'edit.php' ) ),
-			esc_attr( sprintf( __( 'View %d repeat posts', 'hm-post-repeat' ), $repeat_posts_count ) ),
-			esc_html( sprintf( __( '%d repeat posts', 'hm-post-repeat' ), $repeat_posts_count ) )
+			esc_attr( sprintf(
+				_n(
+					'View %d repeat post',
+					'View %d repeat posts',
+					$repeat_posts_count,
+					'hm-post-repeat'
+				),
+				number_format_i18n( $repeat_posts_count )
+			) ),
+			esc_html( sprintf(
+				_n(
+					'%d repeat post',
+					'%d repeat posts',
+					$repeat_posts_count,
+					'hm-post-repeat'
+				),
+				number_format_i18n( $repeat_posts_count )
+			) )
 		);
 	} else {
+
 		// 0 Repeat post - display text, not a link.
-		$actions['view_repeat'] = esc_html( sprintf( __( '%d repeat posts', 'hm-post-repeat' ), $repeat_posts_count ) );
+		$actions['view_repeat'] = esc_html( sprintf(
+			_n(
+				'%d repeat post',
+				'%d repeat posts',
+				$repeat_posts_count,
+				'hm-post-repeat'
+			),
+			number_format_i18n( $repeat_posts_count )
+		) );
 	}
 
 	return $actions;
