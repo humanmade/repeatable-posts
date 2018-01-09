@@ -489,8 +489,18 @@ function admin_table_views_links( $views ) {
 			number_format_i18n( $repeat_type_query->post_count )
 		);
 
-		// Add current class to the link to highlight it when it's selected.
-		$class_html = ( get_repeat_type_url_param() === $repeat_type ) ? ' class="current"' : '';
+		/**
+		 * Add current class to the view link to highlight it when it's selected.
+		 * NB: do not highlight the view link when displaying subsection of results
+		 * (i.e. Repeat posts for a specific Repeating post).
+		 */
+		$class_html = '';
+		if (
+			get_repeat_type_url_param() === $repeat_type &&
+			! isset( $_GET['post_parent'] )
+		) {
+			$class_html = ' class="current"';
+		}
 
 		$link_html = sprintf(
 			'<a href="%s"%s>%s</a>',
