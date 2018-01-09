@@ -476,7 +476,7 @@ function admin_table_views_links( $views ) {
 		$link_label = sprintf(
 				'%s <span class="count">(%s)</span>',
 			esc_html( $repeat_desc ),
-			number_format_i18n( $repeat_type_query->post_count )
+			esc_html( number_format_i18n( $repeat_type_query->post_count ) )
 		);
 
 		// Add current class to the link to highlight it when it's selected.
