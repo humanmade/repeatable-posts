@@ -372,17 +372,21 @@ function get_repeating_schedule( $post_id ) {
  *
  * A repeating post is defined as the original post that was set to repeat.
  *
- * @param int $post_id The id of the post you want to check.
+ * @param int $post_id The ID of the post you want to check.
+ *
  * @return bool Whether the passed post_id is a repeating post or not.
  */
 function is_repeating_post( $post_id ) {
 
-	// We check $_POST data so that this function works inside a `save_post` hook when the post_meta hasn't yet been saved
+	// We check $_POST data so that this function works inside a `save_post` hook when the post_meta hasn't yet been saved.
 	if ( isset( $_POST['hm-post-repeat'] ) && isset( $_POST['ID'] ) && $_POST['ID'] === $post_id ) {
 		return true;
 	}
 
-	if ( get_post_meta( $post_id, 'hm-post-repeat', true ) ) {
+	// For saved posts - Repeating post has meta key and does NOT have a parent.
+	$post_parent = get_post_field( 'post_parent', $post_id );
+
+	if ( ! $post_parent && get_post_meta( $post_id, 'hm-post-repeat', true ) ) {
 		return true;
 	}
 
@@ -395,11 +399,13 @@ function is_repeating_post( $post_id ) {
  *
  * A repeat post is defined as any post which is a repeat of the original repeating post.
  *
- * @param int $post_id The id of the post you want to check.
+ * @param int $post_id The ID of the post you want to check.
+ *
  * @return bool Whether the passed post_id is a repeat post or not.
  */
 function is_repeat_post( $post_id ) {
 
+	// Repeat post has meta key and has a parent.
 	$post_parent = get_post_field( 'post_parent', $post_id );
 
 	if ( $post_parent && get_post_meta( $post_parent, 'hm-post-repeat', true ) ) {
