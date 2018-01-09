@@ -51,6 +51,10 @@ add_action( 'init', function() {
 // Display only Repeatable Posts in admin table view for registered view links.
 add_filter( 'pre_get_posts', __NAMESPACE__ . '\admin_table_repeat_type_posts_query' );
 
+
+// ***
+add_filter( 'post_row_actions', __NAMESPACE__ . '\admin_table_row_actions', 10, 2 );
+
 /**
  * Enqueue the scripts and styles that are needed by this plugin.
  */
@@ -517,9 +521,18 @@ function admin_table_repeat_type_posts_query( $wp_query ) {
 		return $wp_query;
 	}
 
-	// Add a table view link per each repeat type.
+	// Add WP_Query param depending on displayed repeat type.
 	foreach ( get_repeat_type_query_params( $repeat_type ) as $key => $value ) {
 		$wp_query->set( $key, $value );
+	}
+
+	// Repeat post display - only displaying repeat posts for specific repeating post.
+	$post_parent = isset( $_GET['post_parent'] ) ? intval( $_GET['post_parent'] ) : 0;
+
+	if ( $post_parent ) {
+		$wp_query->set( 'post_parent',         $post_parent );
+		$wp_query->set( 'post_parent__not_in', '' );
+		$wp_query->set( 'post_parent__in',     '' );
 	}
 
 	return $wp_query;
@@ -587,4 +600,44 @@ function get_available_repeat_types() {
  */
 function is_allowed_repeat_type( $repeat_type ) {
 	return in_array( $repeat_type, array_keys( get_available_repeat_types() ) );
+}
+
+
+/**
+ * Filters the array of row action links on the Posts list table.
+ *
+ * The filter is evaluated only for non-hierarchical post types.
+ *
+ * @since 2.8.0
+ *
+ * @param array $actions An array of row action links. Defaults are
+ *                         'Edit', 'Quick Edit', 'Restore', 'Trash',
+ *                         'Delete Permanently', 'Preview', and 'View'.
+ * @param WP_Post $post The post object.
+ */
+function admin_table_row_actions( $actions, $post ) {
+
+	if ( ! is_repeating_post( $post->ID ) ) {
+		return $actions;
+	}
+
+
+	$url_args = array(
+		'post_type'      => get_current_screen()->post_type,
+		'hm-post-repeat' => 'repeat',
+		'post_parent'    => $post->ID,
+	);
+
+	$count = 7;
+
+	$actions['view_repeat'] = sprintf(
+		'<a href="%s" aria-label="%s">%s</a>',
+		esc_url( add_query_arg( $url_args, 'edit.php' ) ),
+		esc_attr( sprintf( __( 'View %d repeat posts', 'hm-post-repeat' ), $count ) ),
+		esc_html( sprintf( __( '%d repeat posts', 'hm-post-repeat' ), $count ) )
+	);
+
+	$test = 'Bla';
+
+	return $actions;
 }
