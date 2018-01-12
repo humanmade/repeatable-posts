@@ -53,6 +53,7 @@ add_filter( 'pre_get_posts',    __NAMESPACE__ . '\admin_table_repeat_type_posts_
 
 // Add a row link to view all Repeat posts for the current Repeating post.
 add_filter( 'post_row_actions', __NAMESPACE__ . '\admin_table_row_actions_view_repeat_posts', 10, 2 );
+add_action( 'wp',               __NAMESPACE__ . '\admin_table_count_repeat_posts_for_row_links' );
 
 /**
  * Enqueue the scripts and styles that are needed by this plugin.
@@ -630,29 +631,32 @@ function is_allowed_repeat_type( $repeat_type ) {
  *
  * The filter is evaluated only for non-hierarchical post types.
  *
+ * @global $repeat_posts_count Array of all Repeating post IDs currently displayed on the admin page -
+ *                             as keys, with their corresponding Repeat posts count as values.
+ *
  * @param array   $actions An array of row action links.
  * @param WP_Post $post    The post object to display row links for.
  *
  * @return array An array of row action links with added link to view Repeat posts and there count.
  */
 function admin_table_row_actions_view_repeat_posts( $actions, $post ) {
+	global $repeat_posts_count;
 
 	if ( ! is_repeating_post( $post->ID ) ) {
 		return $actions;
 	}
 
-	// Get associated Repeat posts for the current Repeating post.
+	// URL args to display associated Repeat posts for the current Repeating post.
 	$url_args = array(
 		'post_type'      => get_current_screen()->post_type,
 		'hm-post-repeat' => 'repeat',
 		'post_parent'    => $post->ID,
 	);
 
-	// TODO: I think this is an expensive thing to do per each post. Maybe we can store Repeat post count in meta data?
-	$repeat_posts_query = new \WP_Query( get_repeat_type_query_params( 'repeat', $post->ID ) );
-	$repeat_posts_count = $repeat_posts_query->post_count;
+	$count = $repeat_posts_count[ $post->ID ];
 
-	if ( $repeat_posts_count ) {
+	// Repeating post has got some Repeat posts - display the link to view them with the count.
+	if ( $count ) {
 		$actions['view_repeat'] = sprintf(
 			'<a href="%s" aria-label="%s">%s</a>',
 			esc_url( add_query_arg( $url_args, 'edit.php' ) ),
@@ -660,34 +664,78 @@ function admin_table_row_actions_view_repeat_posts( $actions, $post ) {
 				_n(
 					'View %d repeat post',
 					'View %d repeat posts',
-					$repeat_posts_count,
+					$count,
 					'hm-post-repeat'
 				),
-				number_format_i18n( $repeat_posts_count )
+				number_format_i18n( $count )
 			) ),
 			esc_html( sprintf(
 				_n(
 					'%d repeat post',
 					'%d repeat posts',
-					$repeat_posts_count,
+					$count,
 					'hm-post-repeat'
 				),
-				number_format_i18n( $repeat_posts_count )
+				number_format_i18n( $count )
 			) )
 		);
-	} else {
-
-		// 0 Repeat post - display text, not a link.
+	}
+	// Repeating post has no Repeat posts - display text, not a link.
+	else {
 		$actions['view_repeat'] = esc_html( sprintf(
 			_n(
 				'%d repeat post',
 				'%d repeat posts',
-				$repeat_posts_count,
+				$count,
 				'hm-post-repeat'
 			),
-			number_format_i18n( $repeat_posts_count )
+			number_format_i18n( $count )
 		) );
 	}
 
 	return $actions;
+}
+
+/**
+ * A helper/optimisation function to count Repeat posts for all Repeating posts
+ * currently displayed on the admin screen.
+ *
+ * The row action links filter fires per each post displayed on the screen.
+ * We're hooking in earlier that row action link, straight after the main query
+ * for Repeating posts has run.
+ *
+ * @global $wp_query           Main wp_query for the page.
+ * @global $repeat_posts_count Array of all Repeating post IDs currently displayed on the admin page -
+ *                             as keys, with their corresponding Repeat posts count as values.
+ */
+function admin_table_count_repeat_posts_for_row_links() {
+	global $wp_query, $repeat_posts_count;
+
+	// Stop - if current page is not admin page displaying Repeating posts.
+	if ( ! is_admin() && get_repeat_type_url_param() !== 'repeating' ) {
+		return;
+	}
+
+	// Stop - if no Repeating posts found to display.
+	if ( ! $wp_query->posts || ! count( $wp_query->posts ) ) {
+		return;
+	}
+
+	// Get currently displayed Repeating posts IDs on the screen.
+	$repeating_ids = wp_list_pluck( $wp_query->posts, 'ID' );
+
+	// Get Repeating posts' corresponding Repeat posts so we can count them.
+	$repeat_posts_query = new \WP_Query( array( 'post_parent__in' => $repeating_ids ) );
+	$repeat_posts       = $repeat_posts_query->posts;
+
+	// Create array with keys as Repeating post IDs and 0 values.
+	$repeat_posts_count = array();
+	foreach ( $repeating_ids as $repeating_id ) {
+		$repeat_posts_count[ $repeating_id ] = 0;
+	}
+
+	// Count for each Repeating ID, how many Repeat posts there are.
+	foreach ( $repeat_posts as $repeat_post ) {
+		$repeat_posts_count[ $repeat_post->post_parent ] += 1;
+	}
 }
