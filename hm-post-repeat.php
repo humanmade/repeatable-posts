@@ -327,6 +327,7 @@ function get_repeating_schedules() {
 		'daily'   => array( 'interval' => '1 day',   'display' => __( 'Daily',   'hm-post-repeat' ) ),
 		'weekly'  => array( 'interval' => '1 week',  'display' => __( 'Weekly',  'hm-post-repeat' ) ),
 		'monthly' => array( 'interval' => '1 month', 'display' => __( 'Monthly', 'hm-post-repeat' ) ),
+		'yearly' => array( 'interval' => '1 year', 'display' => __( 'Yearly', 'hm-post-repeat' ) )
 	) );
 
 	foreach ( $schedules as $slug => &$schedule ) {
