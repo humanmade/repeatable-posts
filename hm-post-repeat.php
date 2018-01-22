@@ -181,12 +181,10 @@ function save_post_repeating_status( $post_id = null, $post_repeat_setting = nul
 	if ( 'no' === $post_repeat_setting ) {
 		delete_post_meta( $post_id, 'hm-post-repeat' );
 	}
-
 	// Make sure we have a valid schedule.
 	elseif ( in_array( $post_repeat_setting, array_keys( get_repeating_schedules() ) ) ) {
 		update_post_meta( $post_id, 'hm-post-repeat', $post_repeat_setting );
 	}
-
 }
 
 
@@ -227,49 +225,49 @@ function create_next_repeat_post( $post_id ) {
 
 	$original_post_id = get_repeating_post( $post_id );
 
-	// Bail if we're not publishing a repeat(ing) post
+	// Bail if we're not publishing a repeat(ing) post.
 	if ( ! $original_post_id ) {
 		return false;
 	}
 
 	$original_post = get_post( $original_post_id, ARRAY_A );
 
-	// If there is already a repeat post scheduled don't create another one
+	// If there is already a repeat post scheduled don't create another one.
 	if ( get_next_scheduled_repeat_post( $original_post['ID'] ) ) {
 		return false;
 	}
 
-	// Bail if the saved schedule doesn't exist
+	// Bail if the saved schedule doesn't exist.
 	$repeating_schedule = get_repeating_schedule( $original_post['ID'] );
 
 	if ( ! $repeating_schedule ) {
 		return false;
 	}
 
-	// Bail if the original post isn't already published
+	// Bail if the original post isn't already published.
 	if ( 'publish' !== $original_post['post_status'] ) {
 		return false;
 	}
 
 	$next_post = $original_post;
 
-	// Create the repeat post as a copy of the original, but ignore some fields
+	// Create the repeat post as a copy of the original, but ignore some fields.
 	unset( $next_post['ID'] );
 	unset( $next_post['guid'] );
 	unset( $next_post['post_date_gmt'] );
 	unset( $next_post['post_modified'] );
 	unset( $next_post['post_modified_gmt'] );
 
-	// We set the post_parent to the original post_id, so they're related
+	// We set the post_parent to the original post_id, so they're related.
 	$next_post['post_parent'] = $original_post['ID'];
 
-	// Set the next post to publish in the future
+	// Set the next post to publish in the future.
 	$next_post['post_status'] = 'future';
 
-	// Use the date of the current post being saved as the base
+	// Use the date of the current post being saved as the base.
 	$next_post['post_date'] = date( 'Y-m-d H:i:s', strtotime( get_post_field( 'post_date', $post_id ) . ' + ' . $repeating_schedule['interval'] ) );
 
-	// Make sure the next post will be in the future
+	// Make sure the next post will be in the future from the current time.
 	if ( strtotime( $next_post['post_date'] ) <= time() ) {
 		return false;
 	}
@@ -292,16 +290,16 @@ function create_next_repeat_post( $post_id ) {
 		return false;
 	}
 
-	// Mirror any post_meta
+	// Mirror any post meta.
 	$post_meta = get_post_meta( $original_post['ID'] );
 
-	if ( $post_meta  ) {
+	if ( $post_meta ) {
 
-		// Ignore some internal meta fields
+		// Ignore some internal meta fields.
 		unset( $post_meta['_edit_lock'] );
 		unset( $post_meta['_edit_last'] );
 
-		// Don't copy the post repeat meta as only the original post should have that
+		// Don't copy the post repeat meta as only the original post should have that.
 		unset( $post_meta['hm-post-repeat'] );
 
 		foreach ( $post_meta as $key => $values ) {
@@ -311,7 +309,7 @@ function create_next_repeat_post( $post_id ) {
 		}
 	}
 
-	// Mirror any term relationships
+	// Mirror any term relationships.
 	$taxonomies = get_object_taxonomies( $original_post['post_type'] );
 
 	foreach ( $taxonomies as $taxonomy ) {
@@ -319,7 +317,6 @@ function create_next_repeat_post( $post_id ) {
 	}
 
 	return $next_post_id;
-
 }
 
 /**
