@@ -153,10 +153,22 @@ function admin_table_row_post_states( $post_states, $post ) {
  *
  * Hooked into `save_post`. When saving a post that has been set to repeat we save a post meta entry.
  *
+ * @global bool $is_creating_repeat   A flag to identify that a Repeat post is being currently created.
+ *                                    When we `wp_insert_post` a Repeat post the `save_post` filters are firing again.
+ *                                    However, we only want to run all our functions hooked into `save_post` once,
+ *                                    therefor we're skipping them when Repeat post is being created.
+ *
  * @param int    $post_id             The ID of the post.
  * @param string $post_repeat_setting Used to manually set the repeating schedule from tests.
  */
 function save_post_repeating_status( $post_id = null, $post_repeat_setting = null ) {
+	global $is_creating_repeat;
+
+	// Stop - Repeat post is being saved, it doesn't need meta data.
+	// N.B. when inserting a Repeat post via `wp_insert_post` the `save_post` filters are firing again.
+	if ( $is_creating_repeat ) {
+		return;
+	}
 
 	if ( is_null( $post_repeat_setting ) ) {
 		$post_repeat_setting = isset( $_POST['hm-post-repeat'] ) ? sanitize_text_field( $_POST['hm-post-repeat'] ) : '';
@@ -181,14 +193,29 @@ function save_post_repeating_status( $post_id = null, $post_repeat_setting = nul
 /**
  * Create the next repeat post when the last one is published.
  *
- * When a repeat post (or the original) is published we copy and schedule a new post
- * to publish on the correct interval. That way the next repeat post is always ready to go.
- * This is hooked into publish_post so that the repeat post is only created when the original
+ * When a Repeat post (or the original) is published we copy and schedule a new post
+ * to publish on the correct interval. That way the next Repeat post is always ready to go.
+ * This is hooked into `publish_post`(??) so that the Repeat post is only created when the original
  * is published.
  *
+ * @global bool $is_creating_repeat   A flag to identify that a Repeat post is being currently created.
+ *                                    When we `wp_insert_post` a Repeat post the `save_post` filters are firing again.
+ *                                    However, we only want to run all our functions hooked into `save_post` once,
+ *                                    therefor we're skipping them when Repeat post is being created.
+ *
  * @param int $post_id The ID of the post.
+ *
+ * @return int|\WP_Error A Repeat post ID on success, WP_Error if Repeat post could not be created.
+ *                       Terminate function execution if conditions are not met.
  */
 function create_next_repeat_post( $post_id ) {
+	global $is_creating_repeat;
+
+	// Stop - Repeat post is being saved, we need to run this code just once.
+	// N.B. when inserting a Repeat post via `wp_insert_post` the `save_post` filters are firing again.
+	if ( $is_creating_repeat ) {
+		return;
+	}
 
 	if ( ! in_array( get_post_type( $post_id ), repeating_post_types() ) ) {
 		return false;
@@ -257,7 +284,9 @@ function create_next_repeat_post( $post_id ) {
 	$next_post = apply_filters( 'hm_post_repeat_edit_repeat_post', $next_post, $repeating_schedule, $original_post );
 
 	// All checks done, get that post scheduled!
-	$next_post_id = wp_insert_post( wp_slash( $next_post ), true );
+	$is_creating_repeat = true;
+	$next_post_id       = wp_insert_post( wp_slash( $next_post ), true );
+	$is_creating_repeat = false;
 
 	if ( is_wp_error( $next_post_id ) ) {
 		return false;
