@@ -478,10 +478,11 @@ function delete_next_scheduled_repeat_post( $post_id ) {
 }
 
 /**
- * Get the next scheduled repeat post
+ * Get the next scheduled repeat post.
  *
- * @param int $post_id The id of a repeat or repeating post
- * @return Int|Bool Return the ID of the next repeat post_id or false if it can't find one
+ * @param int $post_id The ID of a Repeat or Repeating post.
+ *
+ * @return int|bool Return the ID of the next repeat post_id or false if it can't find one.
  */
 function get_next_scheduled_repeat_post( $post_id ) {
 
@@ -490,35 +491,34 @@ function get_next_scheduled_repeat_post( $post_id ) {
 	$repeat_posts = get_posts( array( 'post_status' => 'future', 'post_parent' => $post->ID ) );
 
 	if ( isset( $repeat_posts[0] ) ) {
-	 	return $repeat_posts[0];
+		return $repeat_posts[0];
 	}
 
 	return false;
-
 }
 
 /**
- * Get the next scheduled repeat post
+ * Get the next scheduled repeat post.
  *
- * @param int $post_id The id of a repeat or repeating post
- * @return Int|Bool Return the original repeating post_id or false if it can't find it
+ * @param int $post_id The ID of a Repeat or Repeating post.
+ *
+ * @return int|bool Return the original repeating post_id or false if it can't find it.
  */
 function get_repeating_post( $post_id ) {
 
 	$original_post_id = false;
 
-	// Are we publishing a repeat post
+	// Are we publishing a Repeat post.
 	if ( is_repeat_post( $post_id ) ) {
 		$original_post_id = get_post( $post_id )->post_parent;
 	}
 
-	// Or the original
+	// Or the original Repeating post.
 	elseif ( is_repeating_post( $post_id ) ) {
 		$original_post_id = $post_id;
 	}
 
 	return $original_post_id;
-
 }
 
 /**
