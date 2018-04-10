@@ -345,6 +345,23 @@ class PostRepeatTests extends \WP_UnitTestCase {
 		$this->assertSame( $repeat_post->post_date, $next_post_date );
 
 	}
+	
+	function test_repeating_post_interval_fortnightly() {
+
+		$_POST['hm-post-repeat'] = 'fortnightly';
+		$post = $this->factory->post->create_and_get();
+		$this->assertTrue( is_repeating_post( $post->ID ) );
+
+		$future_posts = get_posts( array( 'post_status' => 'future' ) );
+		$this->assertCount( 1, $future_posts );
+
+		$repeat_post = reset( $future_posts );
+		$this->assertTrue( is_repeat_post( $repeat_post->ID ) );
+
+		$next_post_date = date( 'Y-m-d H:i:s', strtotime( $post->post_date . ' + 2 weeks' ) );
+		$this->assertSame( $repeat_post->post_date, $next_post_date );
+
+	}
 
 	function test_repeating_post_interval_monthly() {
 
