@@ -324,9 +324,10 @@ function get_repeating_schedules() {
 	 * @param array[] $schedules Schedule array items.
 	 */
 	$schedules = apply_filters( 'hm_post_repeat_schedules', array(
-		'daily'   => array( 'interval' => '1 day',   'display' => __( 'Daily',   'hm-post-repeat' ) ),
-		'weekly'  => array( 'interval' => '1 week',  'display' => __( 'Weekly',  'hm-post-repeat' ) ),
-		'monthly' => array( 'interval' => '1 month', 'display' => __( 'Monthly', 'hm-post-repeat' ) ),
+		'daily'       => array( 'interval' => '1 day',   'display' => __( 'Daily',        'hm-post-repeat' ) ),
+		'weekly'      => array( 'interval' => '1 week',  'display' => __( 'Weekly',       'hm-post-repeat' ) ),
+		'fortnightly' => array( 'interval' => '1 week',  'display' => __( 'Fortnightly',  'hm-post-repeat' ) ),
+		'monthly'     => array( 'interval' => '1 month', 'display' => __( 'Monthly',      'hm-post-repeat' ) ),
 	) );
 
 	foreach ( $schedules as $slug => &$schedule ) {
