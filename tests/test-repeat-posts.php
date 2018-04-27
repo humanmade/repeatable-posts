@@ -406,7 +406,6 @@ class PostRepeatTests extends \WP_UnitTestCase {
 			'display'  => 'Daily',
 			'slug'     => 'daily',
 		), get_repeating_schedule( $post_id ) );
-
 	}
 
 	/**
@@ -457,6 +456,59 @@ class PostRepeatTests extends \WP_UnitTestCase {
 		$this->assertNotEmpty( $repeat_posts );
 		$this->assertTrue( is_repeat_post( $repeat_posts[0]->ID ) );
 		$this->assertSame( $repeat_posts[0]->post_title, 'Repeat Post Week 1, 2018' );
+	}
+
+	/**
+	 * Tests if an available repeat type is valid
+	 */
+	function test_is_allowed_repeat_type() {
+		$valid_types = array_keys( get_available_repeat_types() );
+		foreach ($valid_types as $valid_type ) {
+			$this->assertTrue( is_allowed_repeat_type( $valid_type ) );
+		}
+
+		$invalid_types = array( 'publish', 'Repeat', 'Repeating', null );
+		foreach ($invalid_types as $invalid_type ) {
+			$this->assertNotTrue( is_allowed_repeat_type( $invalid_type ) );
+		}
+	}
+
+	/**
+	 * Tests a set URL query param passed with get_repeat_type_url_param() returns
+	 * the same string
+	 */
+	function test_set_repeat_type_url_param() {
+		$valid_types = get_available_repeat_types();
+		foreach ( $valid_types as $valid_type ) {
+			$_GET['hm-post-repeat'] = $valid_type;
+			$this->assertEquals( $valid_type, get_repeat_type_url_param() );
+		}
+	}
+
+	/**
+	 * This test assumes the URL query param is not set
+	 */
+	function test_empty_repeat_type_url_param() {
+		$not_set_param = array( '', null);
+		foreach ( $not_set_param as $value ) {
+			$_GET['hm-post-repeat'] = $value;
+			$this->assertEquals( '', get_repeat_type_url_param() );
+		}
+	}
+
+	/**
+	 * Tests there is only valid post type repeat keys in get_available_repeat_types().
+	 */
+	function test_get_available_repeat_types() {
+		$repeat_keys = array( 'repeating', 'repeat' );
+		foreach ( $repeat_keys as $key ) {
+			$this->assertArrayHasKey( $key, get_available_repeat_types() );
+		}
+
+		$invalid_keys = array( 'Repeat', 'Repeating', 'publish' );
+		foreach ( $invalid_keys as $key ) {
+			$this->assertArrayNotHasKey( $key, get_available_repeat_types() );
+		}
 	}
 
 }
