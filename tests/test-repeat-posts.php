@@ -463,12 +463,12 @@ class PostRepeatTests extends \WP_UnitTestCase {
 	 */
 	function test_is_allowed_repeat_type() {
 		$valid_types = array_keys( get_available_repeat_types() );
-		foreach ($valid_types as $valid_type ) {
+		foreach ( $valid_types as $valid_type ) {
 			$this->assertTrue( is_allowed_repeat_type( $valid_type ) );
 		}
 
 		$invalid_types = array( 'publish', 'Repeat', 'Repeating', null );
-		foreach ($invalid_types as $invalid_type ) {
+		foreach ( $invalid_types as $invalid_type ) {
 			$this->assertNotTrue( is_allowed_repeat_type( $invalid_type ) );
 		}
 	}
@@ -489,7 +489,7 @@ class PostRepeatTests extends \WP_UnitTestCase {
 	 * This test assumes the URL query param is not set
 	 */
 	function test_empty_repeat_type_url_param() {
-		$not_set_param = array( '', null);
+		$not_set_param = array( '', null );
 		foreach ( $not_set_param as $value ) {
 			$_GET['hm-post-repeat'] = $value;
 			$this->assertEquals( '', get_repeat_type_url_param() );
