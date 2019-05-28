@@ -49,7 +49,11 @@ add_action( 'init', function() {
 } );
 
 // Display only Repeatable Posts in admin table view for registered view links.
-add_filter( 'pre_get_posts', __NAMESPACE__ . '\admin_table_repeat_type_posts_query' );
+add_filter( 'pre_get_posts',    __NAMESPACE__ . '\admin_table_repeat_type_posts_query' );
+
+// Add a row link to view all Repeat posts for the current Repeating post.
+add_filter( 'post_row_actions', __NAMESPACE__ . '\admin_table_row_actions_view_repeat_posts', 10, 2 );
+add_action( 'wp',               __NAMESPACE__ . '\admin_table_count_repeat_posts_for_row_links' );
 
 /**
  * Enqueue the scripts and styles that are needed by this plugin.
@@ -369,17 +373,21 @@ function get_repeating_schedule( $post_id ) {
  *
  * A repeating post is defined as the original post that was set to repeat.
  *
- * @param int $post_id The id of the post you want to check.
+ * @param int $post_id The ID of the post you want to check.
+ *
  * @return bool Whether the passed post_id is a repeating post or not.
  */
 function is_repeating_post( $post_id ) {
 
-	// We check $_POST data so that this function works inside a `save_post` hook when the post_meta hasn't yet been saved
+	// We check $_POST data so that this function works inside a `save_post` hook when the post_meta hasn't yet been saved.
 	if ( isset( $_POST['hm-post-repeat'] ) && isset( $_POST['ID'] ) && $_POST['ID'] === $post_id ) {
 		return true;
 	}
 
-	if ( get_post_meta( $post_id, 'hm-post-repeat', true ) ) {
+	// For saved posts - Repeating post has meta key and does NOT have a parent.
+	$post_parent = get_post_field( 'post_parent', $post_id );
+
+	if ( ! $post_parent && get_post_meta( $post_id, 'hm-post-repeat', true ) ) {
 		return true;
 	}
 
@@ -392,11 +400,13 @@ function is_repeating_post( $post_id ) {
  *
  * A repeat post is defined as any post which is a repeat of the original repeating post.
  *
- * @param int $post_id The id of the post you want to check.
+ * @param int $post_id The ID of the post you want to check.
+ *
  * @return bool Whether the passed post_id is a repeat post or not.
  */
 function is_repeat_post( $post_id ) {
 
+	// Repeat post has meta key and has a parent.
 	$post_parent = get_post_field( 'post_parent', $post_id );
 
 	if ( $post_parent && get_post_meta( $post_parent, 'hm-post-repeat', true ) ) {
@@ -480,8 +490,18 @@ function admin_table_views_links( $views ) {
 			esc_html( number_format_i18n( $repeat_type_query->post_count ) )
 		);
 
-		// Add current class to the link to highlight it when it's selected.
-		$class_html = ( get_repeat_type_url_param() === $repeat_type ) ? ' class="current"' : '';
+		/**
+		 * Add current class to the view link to highlight it when it's selected.
+		 * NB: do not highlight the view link when displaying subsection of results
+		 * (i.e. Repeat posts for a specific Repeating post).
+		 */
+		$class_html = '';
+		if (
+			get_repeat_type_url_param() === $repeat_type &&
+			! isset( $_GET['post_parent'] )
+		) {
+			$class_html = ' class="current"';
+		}
 
 		$link_html = sprintf(
 			'<a href="%s"%s>%s</a>',
@@ -497,8 +517,12 @@ function admin_table_views_links( $views ) {
 }
 
 /**
- * Customizes main admin query to get posts of specified repeat type
+ * Customise main admin query to get posts of specified repeat type
  * to be displayed in the admin table.
+ *
+ * The main admin query only displays requested posts in the main table view!
+ * It does NOT do the post count for table view links see `admin_table_views_links()` -
+ * it has got a separate query for the total post count for view links.
  *
  * @param \WP_Query $wp_query Main admin query.
  *
@@ -518,8 +542,11 @@ function admin_table_repeat_type_posts_query( $wp_query ) {
 		return $wp_query;
 	}
 
-	// Add a table view link per each repeat type.
-	foreach ( get_repeat_type_query_params( $repeat_type ) as $key => $value ) {
+	// Repeat post display - only displaying Repeat posts for a specific Repeating post.
+	$post_parent_id = isset( $_GET['post_parent'] ) ? intval( $_GET['post_parent'] ) : 0;
+
+	// Add WP_Query param depending on displayed repeat type.
+	foreach ( get_repeat_type_query_params( $repeat_type, $post_parent_id ) as $key => $value ) {
 		$wp_query->set( $key, $value );
 	}
 
@@ -530,11 +557,12 @@ function admin_table_repeat_type_posts_query( $wp_query ) {
  * Returns array of custom WP_Query params to get posts of specified repeat type.
  * Works for all CPT that support Repeatable Posts.
  *
- * @param string $repeat_type Repeat type of posts to get.
+ * @param string $repeat_type    Repeat type of posts to get.
+ * @param int    $post_parent_id Post parent ID - to find Repeat posts for.
  *
  * @return array Array of custom WP_Query params.
  */
-function get_repeat_type_query_params( $repeat_type ) {
+function get_repeat_type_query_params( $repeat_type, $post_parent_id = 0 ) {
 
 	$query['post_type'] = get_current_screen()->post_type;
 
@@ -551,6 +579,13 @@ function get_repeat_type_query_params( $repeat_type ) {
 
 	} elseif ( $repeat_type === 'repeating' ) {
 		$query['post_parent__in'] = array( 0 );
+	}
+
+	// Repeat post display - only displaying Repeat posts for specific Repeating post.
+	if ( $post_parent_id ) {
+		$query['post_parent']         = $post_parent_id;
+		$query['post_parent__not_in'] = '';
+		$query['post_parent__in']     = '';
 	}
 
 	return $query;
@@ -588,4 +623,120 @@ function get_available_repeat_types() {
  */
 function is_allowed_repeat_type( $repeat_type ) {
 	return in_array( $repeat_type, array_keys( get_available_repeat_types() ) );
+}
+
+/**
+ * Add a row link to view all Repeat posts for the current Repeating post.
+ *
+ * The link text is `# repeat posts` where # is the number of corresponding Repeat posts.
+ *
+ * The filter is evaluated only for non-hierarchical post types.
+ *
+ * @global $repeat_posts_count Array of all Repeating post IDs currently displayed on the admin page -
+ *                             as keys, with their corresponding Repeat posts count as values.
+ *
+ * @param array   $actions An array of row action links.
+ * @param WP_Post $post    The post object to display row links for.
+ *
+ * @return array An array of row action links with added link to view Repeat posts and there count.
+ */
+function admin_table_row_actions_view_repeat_posts( $actions, $post ) {
+	global $repeat_posts_count;
+
+	if ( ! is_repeating_post( $post->ID ) ) {
+		return $actions;
+	}
+
+	// URL args to display associated Repeat posts for the current Repeating post.
+	$url_args = array(
+		'post_type'      => get_current_screen()->post_type,
+		'hm-post-repeat' => 'repeat',
+		'post_parent'    => $post->ID,
+	);
+
+	$count = $repeat_posts_count[ $post->ID ];
+
+	// Repeating post has got some Repeat posts - display the link to view them with the count.
+	if ( $count ) {
+		$actions['view_repeat'] = sprintf(
+			'<a href="%s" aria-label="%s">%s</a>',
+			esc_url( add_query_arg( $url_args, 'edit.php' ) ),
+			esc_attr( sprintf(
+				_n(
+					'View %d repeat post',
+					'View %d repeat posts',
+					$count,
+					'hm-post-repeat'
+				),
+				number_format_i18n( $count )
+			) ),
+			esc_html( sprintf(
+				_n(
+					'%d repeat post',
+					'%d repeat posts',
+					$count,
+					'hm-post-repeat'
+				),
+				number_format_i18n( $count )
+			) )
+		);
+	}
+	// Repeating post has no Repeat posts - display text, not a link.
+	else {
+		$actions['view_repeat'] = esc_html( sprintf(
+			_n(
+				'%d repeat post',
+				'%d repeat posts',
+				$count,
+				'hm-post-repeat'
+			),
+			number_format_i18n( $count )
+		) );
+	}
+
+	return $actions;
+}
+
+/**
+ * A helper/optimisation function to count Repeat posts for all Repeating posts
+ * currently displayed on the admin screen.
+ *
+ * The row action links filter fires per each post displayed on the screen.
+ * We're hooking in earlier that row action link, straight after the main query
+ * for Repeating posts has run.
+ *
+ * @global $wp_query           Main wp_query for the page.
+ * @global $repeat_posts_count Array of all Repeating post IDs currently displayed on the admin page -
+ *                             as keys, with their corresponding Repeat posts count as values.
+ */
+function admin_table_count_repeat_posts_for_row_links() {
+	global $wp_query, $repeat_posts_count;
+
+	// Stop - if current page is not admin page displaying Repeating posts.
+	if ( ! is_admin() && get_repeat_type_url_param() !== 'repeating' ) {
+		return;
+	}
+
+	// Stop - if no Repeating posts found to display.
+	if ( ! $wp_query->posts || ! count( $wp_query->posts ) ) {
+		return;
+	}
+
+	// Get currently displayed Repeating posts IDs on the screen.
+	$repeating_ids = wp_list_pluck( $wp_query->posts, 'ID' );
+
+	// Get Repeating posts' corresponding Repeat posts so we can count them.
+	$repeat_posts_query = new \WP_Query( array( 'post_parent__in' => $repeating_ids ) );
+	$repeat_posts       = $repeat_posts_query->posts;
+
+	// Create array with keys as Repeating post IDs and 0 values.
+	$repeat_posts_count = array();
+	foreach ( $repeating_ids as $repeating_id ) {
+		$repeat_posts_count[ $repeating_id ] = 0;
+	}
+
+	// Count for each Repeating ID, how many Repeat posts there are.
+	foreach ( $repeat_posts as $repeat_post ) {
+		$repeat_posts_count[ $repeat_post->post_parent ] += 1;
+	}
 }
