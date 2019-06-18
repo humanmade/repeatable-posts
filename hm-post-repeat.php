@@ -36,8 +36,7 @@ namespace HM\Post_Repeat;
  * Setup the actions and filters required by this class.
  */
 add_action( 'post_submitbox_misc_actions', __NAMESPACE__ . '\publish_box_ui' );
-add_action( 'save_post',                   __NAMESPACE__ . '\save_post_repeating_status', 10 );
-add_action( 'save_post',                   __NAMESPACE__ . '\create_next_repeat_post', 11 );
+add_action( 'save_post',                   __NAMESPACE__ . '\manage_repeat_post', 10 );
 add_action( 'admin_enqueue_scripts',       __NAMESPACE__ . '\enqueue_scripts' );
 add_filter( 'display_post_states',         __NAMESPACE__ . '\admin_table_row_post_states', 10, 2 );
 
@@ -149,100 +148,147 @@ function admin_table_row_post_states( $post_states, $post ) {
 }
 
 /**
- * Save the repeating status to post meta.
+ * Manage Repeating Post functionality:
  *
- * Hooked into `save_post`. When saving a post that has been set to repeat we save a post meta entry.
+ * 1. Correctly mark/un-mark a Repeating post as such (i.e. save/delete the Repeating Schedule to/from post meta).
+ * 2. Manage cleanup and creation of a corresponding Repeat post.
  *
- * @param int    $post_id             The ID of the post.
- * @param string $post_repeat_setting Used to manually set the repeating schedule from tests.
+ * @param int $post_id                The ID of the (Repeating or Repeat) post being saved.
+ *                                    NB: Used to manually set the Repeating post ID from tests.
+ * @param string $post_repeat_setting Repeating Schedule setting (daily, weekly, etc).
+ *                                    NB: Used to manually set the Repeating Schedule for a post from tests.
  */
-function save_post_repeating_status( $post_id = null, $post_repeat_setting = null ) {
+function manage_repeat_post( $post_id = null, $post_repeat_setting = null ) {
 
+	// Not running a phpunit test - check if Repeating Schedule setting value is present when saving a post.
 	if ( is_null( $post_repeat_setting ) ) {
 		$post_repeat_setting = isset( $_POST['hm-post-repeat'] ) ? sanitize_text_field( $_POST['hm-post-repeat'] ) : '';
 	}
 
-	if ( ! in_array( get_post_type( $post_id ), repeating_post_types() ) || empty( $post_repeat_setting ) ) {
+	/**
+	 * Stop - if:
+	 * 1. Post type doesn't support Repeating Posts feature.
+	 * 2. Not processing a Repeat post.
+	 * 3. Not processing a Repeating post (i.e. Repeating Schedule isn't specified).
+	 */
+	if (
+			! in_array( get_post_type( $post_id ), repeating_post_types() ) ||
+			( ! is_repeat_post( $post_id ) && empty( $post_repeat_setting ) )
+	) {
 		return;
 	}
 
-	if ( 'no' === $post_repeat_setting ) {
-		delete_post_meta( $post_id, 'hm-post-repeat' );
+	// Repeating post - save the specified Repeating Schedule and manage a Repeat post.
+	if ( $post_repeat_setting ) {
+
+		// Repeating Schedule is removed - i.e. the post is no longer Repeating.
+		if ( 'no' === $post_repeat_setting ) {
+
+			// Remove post meta from the Repeating post.
+			delete_post_meta( $post_id, 'hm-post-repeat' );
+
+			// Clean up the currently scheduled Repeat post if any.
+			delete_next_scheduled_repeat_post( $post_id );
+		}
+		// Repeating Schedule is specified and valid - save it to post's meta and manage a Repeat post.
+		elseif ( in_array( $post_repeat_setting, array_keys( get_repeating_schedules() ) ) ) {
+
+			/**
+			 * Clean up the currently scheduled Repeat post if any. This takes care of cases when:
+			 * 1. Repeating Schedule has changed.
+			 * 2. Content of the Repeating post is changed.
+			 *
+			 * In such cases, the next scheduled post should reflect these changes.
+			 */
+			delete_next_scheduled_repeat_post( $post_id );
+
+			// Update a Repeating Schedule for the current post.
+			update_post_meta( $post_id, 'hm-post-repeat', $post_repeat_setting );
+
+			// Schedule a Repeat post.
+			create_next_repeat_post( $post_id );
+		}
 	}
 
-	// Make sure we have a valid schedule.
-	elseif ( in_array( $post_repeat_setting, array_keys( get_repeating_schedules() ) ) ) {
-		update_post_meta( $post_id, 'hm-post-repeat', $post_repeat_setting );
-	}
+	// Repeat post - is published, schedule a next Repeat post.
+	if ( is_repeat_post( $post_id ) && 'publish' === get_post_status( $post_id ) ) {
 
+		create_next_repeat_post( $post_id );
+	}
 }
 
-
 /**
- * Create the next repeat post when the last one is published.
+ * Create the next Repeat post when:
+ * 1. a Repeating post is published or already published post is re-saved.
+ * 2. a previously scheduled Repeat post is published.
  *
- * When a repeat post (or the original) is published we copy and schedule a new post
- * to publish on the correct interval. That way the next repeat post is always ready to go.
- * This is hooked into publish_post so that the repeat post is only created when the original
- * is published.
+ * In such cases we copy the Repeating post and schedule a new Repeat post to publish on the correct interval.
+ * This way the next Repeat post is always ready to go.
  *
- * @param int $post_id The ID of the post.
+ * @param int $post_id The ID of the (Repeating or Repeat) post being saved.
+ *
+ * @return int|\WP_Error A scheduled Repeat post ID on success,
+ *                       WP_Error if a Repeat post could not be created.
+ *                       Terminate function execution if conditions are not met.
  */
 function create_next_repeat_post( $post_id ) {
 
+	// Stop - post type doesn't support Repeating Posts feature.
 	if ( ! in_array( get_post_type( $post_id ), repeating_post_types() ) ) {
 		return false;
 	}
 
+	// Stop - the current post isn't being published.
 	if ( 'publish' !== get_post_status( $post_id ) ) {
 		return false;
 	}
 
+	// Get the Repeating post ID for the current post being saved (which in turn can be a Repeating or Repeat post).
 	$original_post_id = get_repeating_post( $post_id );
 
-	// Bail if we're not publishing a repeat(ing) post
 	if ( ! $original_post_id ) {
 		return false;
 	}
 
+	// Get the original Repeating post.
 	$original_post = get_post( $original_post_id, ARRAY_A );
 
-	// If there is already a repeat post scheduled don't create another one
+	// Stop - the original Repeating post isn't already published.
+	if ( 'publish' !== $original_post['post_status'] ) {
+		return false;
+	}
+
+	// Stop - there is already a Repeat post scheduled don't create another one.
 	if ( get_next_scheduled_repeat_post( $original_post['ID'] ) ) {
 		return false;
 	}
 
-	// Bail if the saved schedule doesn't exist
+	// Get Repeating Schedule.
 	$repeating_schedule = get_repeating_schedule( $original_post['ID'] );
 
 	if ( ! $repeating_schedule ) {
 		return false;
 	}
 
-	// Bail if the original post isn't already published
-	if ( 'publish' !== $original_post['post_status'] ) {
-		return false;
-	}
-
 	$next_post = $original_post;
 
-	// Create the repeat post as a copy of the original, but ignore some fields
+	// Create the Repeat post as a copy of the original, but ignore some fields.
 	unset( $next_post['ID'] );
 	unset( $next_post['guid'] );
 	unset( $next_post['post_date_gmt'] );
 	unset( $next_post['post_modified'] );
 	unset( $next_post['post_modified_gmt'] );
 
-	// We set the post_parent to the original post_id, so they're related
+	// Set the post_parent to the original Repeating post_id, so they're related.
 	$next_post['post_parent'] = $original_post['ID'];
 
-	// Set the next post to publish in the future
+	// Set the next Repeat post to publish in the future.
 	$next_post['post_status'] = 'future';
 
-	// Use the date of the current post being saved as the base
+	// Use the date of the current post being saved as the base.
 	$next_post['post_date'] = date( 'Y-m-d H:i:s', strtotime( get_post_field( 'post_date', $post_id ) . ' + ' . $repeating_schedule['interval'] ) );
 
-	// Make sure the next post will be in the future
+	// Make sure the next post will be in the future from the current time.
 	if ( strtotime( $next_post['post_date'] ) <= time() ) {
 		return false;
 	}
@@ -256,23 +302,34 @@ function create_next_repeat_post( $post_id ) {
 	 */
 	$next_post = apply_filters( 'hm_post_repeat_edit_repeat_post', $next_post, $repeating_schedule, $original_post );
 
+	/**
+	 * Remove and then re-add our custom functionality hooked in into `save_post` filter.
+	 * This is due to inserting a Repeat post using `wp_insert_post()` which in turn
+	 * calls the `save_post` filters again.
+	 *
+	 * We want our custom functionality to run on the `save_post` filter only once.
+	 */
+	remove_action( 'save_post', __NAMESPACE__ . '\\manage_repeat_post' );
+
 	// All checks done, get that post scheduled!
 	$next_post_id = wp_insert_post( wp_slash( $next_post ), true );
+
+	add_action( 'save_post', __NAMESPACE__ . '\\manage_repeat_post' );
 
 	if ( is_wp_error( $next_post_id ) ) {
 		return false;
 	}
 
-	// Mirror any post_meta
+	// Mirror any post meta.
 	$post_meta = get_post_meta( $original_post['ID'] );
 
-	if ( $post_meta  ) {
+	if ( $post_meta ) {
 
-		// Ignore some internal meta fields
+		// Ignore some internal meta fields.
 		unset( $post_meta['_edit_lock'] );
 		unset( $post_meta['_edit_last'] );
 
-		// Don't copy the post repeat meta as only the original post should have that
+		// Don't copy the post Repeating Schedule meta as only the original Repeating post should have that.
 		unset( $post_meta['hm-post-repeat'] );
 
 		foreach ( $post_meta as $key => $values ) {
@@ -282,7 +339,7 @@ function create_next_repeat_post( $post_id ) {
 		}
 	}
 
-	// Mirror any term relationships
+	// Mirror any term relationships.
 	$taxonomies = get_object_taxonomies( $original_post['post_type'] );
 
 	foreach ( $taxonomies as $taxonomy ) {
@@ -290,7 +347,6 @@ function create_next_repeat_post( $post_id ) {
 	}
 
 	return $next_post_id;
-
 }
 
 /**
@@ -404,14 +460,30 @@ function is_repeat_post( $post_id ) {
 	}
 
 	return false;
-
 }
 
 /**
- * Get the next scheduled repeat post
+ * Delete currently scheduled i.e. future Repeat posts for the specified post.
  *
- * @param int $post_id The id of a repeat or repeating post
- * @return Int|Bool Return the ID of the next repeat post_id or false if it can't find one
+ * @param $post_id The ID of a Repeat or Repeating post to delete scheduled posts for.
+ */
+function delete_next_scheduled_repeat_post( $post_id ) {
+
+	// TO DO: will it ever be more than 1 scheduled post?
+	$next_repeat_post = get_next_scheduled_repeat_post( $post_id );
+
+	if ( $next_repeat_post ) {
+		// TO DO: should we trash or permanently delete? I think permanently delete.
+		wp_delete_post( $next_repeat_post->ID, true );
+	}
+}
+
+/**
+ * Get the next scheduled repeat post.
+ *
+ * @param int $post_id The ID of a Repeat or Repeating post.
+ *
+ * @return int|bool Return the ID of the next repeat post_id or false if it can't find one.
  */
 function get_next_scheduled_repeat_post( $post_id ) {
 
@@ -420,35 +492,34 @@ function get_next_scheduled_repeat_post( $post_id ) {
 	$repeat_posts = get_posts( array( 'post_status' => 'future', 'post_parent' => $post->ID ) );
 
 	if ( isset( $repeat_posts[0] ) ) {
-	 	return $repeat_posts[0];
+		return $repeat_posts[0];
 	}
 
 	return false;
-
 }
 
 /**
- * Get the next scheduled repeat post
+ * Get the next scheduled repeat post.
  *
- * @param int $post_id The id of a repeat or repeating post
- * @return Int|Bool Return the original repeating post_id or false if it can't find it
+ * @param int $post_id The ID of a Repeat or Repeating post.
+ *
+ * @return int|bool Return the original repeating post_id or false if it can't find it.
  */
 function get_repeating_post( $post_id ) {
 
 	$original_post_id = false;
 
-	// Are we publishing a repeat post
+	// Are we publishing a Repeat post.
 	if ( is_repeat_post( $post_id ) ) {
 		$original_post_id = get_post( $post_id )->post_parent;
 	}
 
-	// Or the original
+	// Or the original Repeating post.
 	elseif ( is_repeating_post( $post_id ) ) {
 		$original_post_id = $post_id;
 	}
 
 	return $original_post_id;
-
 }
 
 /**

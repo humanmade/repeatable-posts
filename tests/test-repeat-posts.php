@@ -148,9 +148,13 @@ class PostRepeatTests extends \WP_UnitTestCase {
 		$this->assertEquals( $post_id + 1, create_next_repeat_post( $post_id ) );
 		$this->assertCount( 1, get_posts( array( 'post_status' => 'future' ) ) );
 
-		// Prove that another repeat post isn't created
+		// Prove that another repeat post isn't created.
 		$this->assertFalse( create_next_repeat_post( $post_id ) );
 		$this->assertCount( 1, get_posts( array( 'post_status' => 'future' ) ) );
+
+		// Prove that only the Repeating Post has got meta data, but not the Repeat post.
+		$this->assertCount( 1, get_post_meta( $post_id, 'hm-post-repeat' ) );
+		$this->assertCount( 0, get_post_meta( $post_id + 1, 'hm-post-repeat' ) );
 
 	}
 
@@ -200,23 +204,50 @@ class PostRepeatTests extends \WP_UnitTestCase {
 
 	}
 
+	/**
+	 * TODO: This test needs re-writing!
+	 *
+	 * The code is using $_POST global as a deciding condition where to save a meta data for a post or not.
+	 * This test doesn't use $_POST, but sets meta data via separate `save_post_repeating_status` function.
+	 *
+	 * So, the live and test environment have setup differences - which previously
+	 * resulted in the fact that the test did pass, while in reality the `hm-post-repeat`
+	 * meta data was created for a Repeat post (while it shouldn't have).
+	 *
+	 * That issue is fixed in this current PR, but I'm struggling to correctly test it.
+	 * The difficulty is due to `save_post` hook and therefore 2 functions hooked into it,
+	 * being triggered again when a Repeat post is being `wp_insert_post`. Thus resulting
+	 * in code inception - that in turn uses $_POST global as a deciding condition whether
+	 * to save a meta data or not.
+	 *
+	 * We need to replicate a live environment conditions with $_POST global.
+	 */
 	function test_create_repeat_post_copies_meta() {
 
 		$post_id = $this->factory->post->create();
 		save_post_repeating_status( $post_id, 'weekly' );
 
-		$meta = array( 'NonEmptyString' => 'Test', 'Int' => 134, 'EmptyString' => '', 'bool' => true, 'object' => get_post( $post_id ), 'array' => get_post( $post_id, ARRAY_A ) );
+		$meta = array(
+			'NonEmptyString' => 'Test',
+			'Int'            => 134,
+			'EmptyString'    => '',
+			'bool'           => true,
+			'object'         => get_post( $post_id ),
+			'array'          => get_post( $post_id, ARRAY_A )
+		);
 
+		// Attach extra meta data to Repeating post.
 		foreach ( $meta as $key => $value ) {
 			add_post_meta( $post_id, $key, $value );
 		}
 
+		// Get all Repeating post meta that we expect to be copied over.
 		$post_meta = get_post_meta( $post_id );
 
-		// `hm-post-repeat` isn't copied over
+		// Delete `hm-post-repeat` from meta data as isn't copied over.
 		unset( $post_meta['hm-post-repeat'] );
 
-		$repeat_post_id = create_next_repeat_post( $post_id );
+		$repeat_post_id   = create_next_repeat_post( $post_id );
 		$repeat_post_meta = get_post_meta( $repeat_post_id );
 		$this->assertEquals( $post_meta, $repeat_post_meta );
 
