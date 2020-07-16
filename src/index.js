@@ -5,52 +5,6 @@ import { withSelect, withDispatch } from '@wordpress/data';
 import { __ } from "@wordpress/i18n";
 
 
-const HMPostRepeatOptions = {
-	no: {
-		value: "",
-		label: "No"
-		description: "",
-		onSelect:
-		checked:
-		onMetaFieldChange: value;
-	},
-	daily: {
-		value: "daily",
-		label: "Daily"
-		description: "",
-		onSelect:
-		checked:
-		onMetaFieldChange: value;
-	},
-	weekly: {
-		value: "weekly",
-		label: "Weekly"
-		description: "",
-		onSelect:
-		checked:
-		onMetaFieldChange: value;
-
-	},
-	fortnightly: {
-		value: "fortnightly",
-		label: "Fornightly"
-		description: "",
-		onSelect:
-		checked:
-		onMetaFieldChange: value;
-	},
-	monthly: {
-		value: "monthly",
-		label: "Monthly"
-		description: "",
-		onSelect: ,
-		checked:,
-		onMetaFieldChange: value;
-	},
-};
-
-
-
 registerPlugin( 'hm-post-repeat', {
   icon: 'controls-repeat',
   render: () => {
@@ -76,8 +30,102 @@ registerPlugin( 'hm-post-repeat', {
 				</Button>
 			) }
 			renderContent={ () => (
-				<p>Some Content!</p>
-			) };
+				<fieldset
+					key="hm-post-repeat-selector"
+					className="hm-post-repeat__dialog-fieldset"
+				>
+					<legend className="hm-post-repeat__dialog-legend">
+						{ __( 'Repeat Frequency' ) }
+					</legend>
+					
+					<div className="hm-post-repeat__choice">
+						<input
+							type="radio"
+							name={ `hm-post-repeat__setting-no` }
+							value=""
+							className="hm-post-repeat__dialog-radio"
+						/>
+						<label
+							htmlFor={ `hm-post-repeat-no-` }
+							className="hm-post-repeat__dialog-label"
+						>
+							No
+						</label>
+						<p>
+								No repeat selected
+						</p>
+					</div>
+					<div className="hm-post-repeat__choice">
+						<input
+							type="radio"
+							name={ `hm-post-repeat__setting-` }
+							value=""
+							className="hm-post-repeat__dialog-radio"
+						/>
+						<label
+							htmlFor={ `hm-post-repeat-no-` }
+							className="hm-post-repeat__dialog-label"
+						>
+							Daily
+						</label>
+						<p>
+								Information description
+						</p>
+					</div>
+					<div className="hm-post-repeat__choice">
+						<input
+							type="radio"
+							name={ `hm-post-repeat__setting-` }
+							value=""
+							className="hm-post-repeat__dialog-radio"
+						/>
+						<label
+							htmlFor={ `hm-post-repeat-no-` }
+							className="hm-post-repeat__dialog-label"
+						>
+							Weekly
+						</label>
+						<p>
+								Information description
+						</p>
+					</div>
+					<div className="hm-post-repeat__choice">
+						<input
+							type="radio"
+							name={ `hm-post-repeat__setting-` }
+							value=""
+							className="hm-post-repeat__dialog-radio"
+						/>
+						<label
+							htmlFor={ `hm-post-repeat-no-` }
+							className="hm-post-repeat__dialog-label"
+						>
+							Fortnightly
+						</label>
+						<p>
+								Every 2 weeks
+						</p>
+					</div>
+					<div className="hm-post-repeat__choice">
+						<input
+							type="radio"
+							name={ `hm-post-repeat__setting-` }
+							value=""
+							className="hm-post-repeat__dialog-radio"
+						/>
+						<label
+							htmlFor={ `hm-post-repeat-no-` }
+							className="hm-post-repeat__dialog-label"
+						>
+							Monthly
+						</label>
+						<p>
+								Information description
+						</p>
+					</div>
+					
+				</fieldset>
+			) }
 		/>
         </PluginPostStatusInfo>
      </>
@@ -94,12 +142,30 @@ let HMPostRepeatFields = (props) => {
 }
 
 // Grab stored meta value of hm-post-repeat using a redux store?!
-HMPostRepeatFields = withSelect(
-  (select) => {
+HMPostRepeatFields: withSelect(
+  (select => {
     return {
       hmpostrepeat_metafield: select('core/editor').getEditedPostAttribute('meta')['hm-post-repeat']
-    }
-  }
+    };
+  })(({ hmpostrepeat_metafield, value, label, description }) => {
+	    if (!hmpostrepeat_metafield) {
+	        return (
+				value= "",
+				label= "No",
+				description= "No repeating of post."
+	    	)
+	    }
+	    if ('fortnightly' === hmpostrepeat_metafield) {
+	        return (
+				value= "",
+				label= "Fornightly JW",
+				description= "No repeating of post."
+	    	)
+	    }
+	    return (
+	    	<>something</>
+	    );
+	}) 
 )(HMPostRepeatFields);
 
 // Save new meta value of hm-post-repeat using a redux store?!
