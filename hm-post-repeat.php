@@ -39,6 +39,7 @@ add_action( 'post_submitbox_misc_actions', __NAMESPACE__ . '\publish_box_ui' );
 add_action( 'save_post',                   __NAMESPACE__ . '\save_post_repeating_status', 10 );
 add_action( 'save_post',                   __NAMESPACE__ . '\create_next_repeat_post', 11 );
 add_action( 'admin_enqueue_scripts',       __NAMESPACE__ . '\enqueue_scripts' );
+add_action( 'enqueue_block_editor_assets', __NAMESPACE__ . '\enqueue_gb_assets' );
 add_filter( 'display_post_states',         __NAMESPACE__ . '\admin_table_row_post_states', 10, 2 );
 
 // Add repeat type table view links to admin screen for each CPT that supports Repeatable Posts.
@@ -46,6 +47,16 @@ add_action( 'init', function() {
 	foreach ( repeating_post_types() as $post_type ) {
 		add_filter( "views_edit-{$post_type}", __NAMESPACE__ . '\admin_table_views_links' );
 	}
+
+	register_post_meta( 'post', 'hm-post-repeat', array(
+	    'show_in_rest' => true,
+	    'single' => true,
+	    'type' => 'string',
+	    'sanitize_callback' => 'sanitize_text_field',
+	    'auth_callback' => function() { 
+	      return current_user_can('edit_posts');
+	    }
+	) );
 } );
 
 // Display only Repeatable Posts in admin table view for registered view links.
@@ -67,6 +78,17 @@ function enqueue_scripts( $hook ) {
 	wp_enqueue_script( 'hm-post-repeat', $plugin_dir_url . 'hm-post-repeat.js', 'jquery', $plugin_data['Version'], true );
 	wp_enqueue_style( 'hm-post-repeat', $plugin_dir_url . 'hm-post-repeat.css', array(), $plugin_data['Version'] );
 
+}
+
+/**
+ * Enqueue assets and scripts required for a Gutenberg interface.
+ */
+function enqueue_gb_assets() {
+  wp_enqueue_script(
+    'hm-post-repeat-gutenberg-ui',
+    plugins_url( 'build/index.js', __FILE__ ),
+    array( 'wp-plugins', 'wp-edit-post', 'wp-i18n', 'wp-element', 'wp-components', 'wp-data' )
+  );
 }
 
 /**

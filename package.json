@@ -1,0 +1,34 @@
+{
+  "name": "repeatable-posts",
+  "version": "1.0.0",
+  "description": "Designate a post as repeatable and it'll be copied and re-published on a weekly basis.",
+  "main": "hm-post-repeat.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "wp-scripts start",
+    "build": "wp-scripts build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/humanmade/repeatable-posts.git"
+  },
+  "author": "humanmade",
+  "license": "GPL-2.0-or-later",
+  "bugs": {
+    "url": "https://github.com/humanmade/repeatable-posts/issues"
+  },
+  "homepage": "https://github.com/humanmade/repeatable-posts#readme",
+  "devDependencies": {
+    "@wordpress/scripts": "^12.1.1"
+  },
+  "dependencies": {
+    "@wordpress/components": "^10.0.1",
+    "@wordpress/data": "^4.22.1",
+    "@wordpress/edit-post": "^3.21.1",
+    "@wordpress/i18n": "^3.14.0",
+    "@wordpress/plugins": "^2.20.1"
+  }
+}
